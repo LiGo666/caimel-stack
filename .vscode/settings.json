@@ -1,0 +1,22 @@
+{
+   "i18n-ally.localesPaths": ["src/repository/next-intl/messages"],
+   "i18n-ally.keystyle": "nested",
+   "i18n-ally.defaultLocale": "en",
+
+   "editor.formatOnSave": true,
+   "editor.formatOnPaste": false,
+   "editor.defaultFormatter": "esbenp.prettier-vscode",
+   "i18n-ally.editor.preferEditor": true,
+   "i18n-ally.sortKeys": true,
+   "i18n-ally.keepFulfilled": true,
+   "todo-tree.filtering.excludeGlobs": [
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/.next/**",
+      "**/build/**",
+      "**/.git/**",
+      "src/repository/prisma/generated/**"
+   ],
+   "todo-tree.regex.regex": "((//|#|<!--|;|/\\*|^)\\s*($TAGS)|^\\s*- \\[ \\]|(ERROR-[0-9]{6})\\b)",
+   "todo-tree.regex.matchCase": true
+}

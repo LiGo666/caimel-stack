@@ -1,0 +1,338 @@
+{
+  "app": {
+    "admin": {
+      "authenticated-as": "You are authenticated as:",
+      "header": "Admin Area",
+      "protected-page": "This is a protected page.",
+      "test": {
+        "next-intl": {
+          "loading": "loading",
+          "perform-test": "Perform Test",
+          "request": {
+            "notfound": {
+              "title": "No Entry found"
+            }
+          },
+          "requests": {
+            "error": {
+              "description": "An error occurred during the operation.",
+              "title": "Error"
+            },
+            "notfound": {
+              "description": "There were no results found to your query",
+              "title": "No Entries were found"
+            },
+            "rateLimitExceeded": {
+              "description": "You have exceeded the rate limit. Please try again later.",
+              "title": "Rate Limit Exceeded"
+            },
+            "success": {
+              "description": "The operation completed successfully.",
+              "title": "Success"
+            }
+          },
+          "subTitle": "Secure API Test Page",
+          "title": "Next Intl Test Page"
+        },
+        "shadcn": {
+          "components": {
+            "buttons": {
+              "default": "Default",
+              "destructive": "Destructive",
+              "disabled": "Disabled",
+              "ghost": "Ghost",
+              "large": "Large",
+              "link": "Link",
+              "loading": "Loading",
+              "outline": "Outline",
+              "secondary": "Secondary",
+              "sizes": "Sizes",
+              "small": "Small",
+              "states": "States",
+              "title": "Buttons",
+              "variants": "Variants"
+            },
+            "dialog": {
+              "cancel": "Cancel",
+              "confirm": "Confirm",
+              "confirmDescription": "This is a sample dialog using shadcn/ui. It's accessible and theme-aware.",
+              "confirmTitle": "Confirm action",
+              "content": "You can place any content here: text, forms, lists, etc.",
+              "open": "Open dialog",
+              "title": "Dialog"
+            },
+            "form": {
+              "admin": "Admin",
+              "bio": "Bio",
+              "bioDescription": "Max 160 characters.",
+              "bioPlaceholder": "Short bio",
+              "description": "React Hook Form + Zod + shadcn/ui",
+              "email": "Email",
+              "emailPlaceholder": "ada@example.com",
+              "footer": "Validated on change with helpful messages.",
+              "name": "Name",
+              "namePlaceholder": "Ada Lovelace",
+              "reset": "Reset",
+              "role": "Role",
+              "rolePlaceholder": "Select role",
+              "save": "Save",
+              "title": "Form",
+              "updates": "Product updates",
+              "updatesDescription": "Receive occasional emails.",
+              "user": "User",
+              "viewer": "Viewer"
+            },
+            "header": {
+              "docs": "Docs",
+              "title": "shadcn/ui Demo"
+            },
+            "table": {
+              "description": "Minimal data table using shadcn/ui",
+              "email": "Email",
+              "id": "ID",
+              "name": "Name",
+              "role": "Role",
+              "status": "Status",
+              "title": "Table"
+            },
+            "tabs": {
+              "account": "Account",
+              "accountContent": "Manage your personal information and preferences.",
+              "description": "Switch between different content panes",
+              "notifications": "Notifications",
+              "notificationsContent": "Choose how you want to be notified about updates.",
+              "password": "Password",
+              "passwordContent": "Change your password and enable two-factor authentication.",
+              "title": "Tabs"
+            }
+          },
+          "currentLocale": "Current: {locale}",
+          "descriptive-text": "Welcome to the Demo This page showcases the core building blocks of the design system. It demonstrates how typography, buttons, forms, and interactive components can work together to create a consistent user experience.  Why shadcn/ui? The components are accessible, composable, and easy to style with Tailwind CSS. They serve as a flexible foundation rather than a locked-in library, allowing you to adapt them to the exact needs of your project.  What you can explore  Typography styles and text hierarchy  Buttons, cards, and form inputs  Alerts, dialogs, and other interactive patterns  Consistent theming with dark and light modes  Conclusion This demo is not about design perfection, but about showing how the pieces fit together. The goal is to make building interfaces faster, more reliable, and more enjoyable.",
+          "english": "EN",
+          "german": "DE",
+          "header": "shadcn/ui Demo",
+          "select-language": "Select Language",
+          "title": "Wow Site!"
+        }
+      }
+    },
+    "auth": {
+      "profile": {
+        "authenticated-as": "Signed in as:",
+        "created": "Account created",
+        "description": "User profile information",
+        "email": "Email address",
+        "errors": {
+          "generic": {
+            "description": "An unexpected error occurred while loading the profile.",
+            "title": "Profile error"
+          }
+        },
+        "header": "Profile",
+        "loadError": "Failed to load profile",
+        "notSet": "Not set",
+        "protected-page": "Protected Page",
+        "role": "User role",
+        "title": "Manage your user profile",
+        "username": "Username"
+      }
+    }
+  },
+  "features": {
+    "next-auth": {
+      "components": {
+        "RegisterForm": {
+          "form": {
+            "confirmPassword": {
+              "label": "Confirm Password"
+            },
+            "email": {
+              "label": "Email",
+              "placeholder": "name@domain.com"
+            },
+            "name": {
+              "label": "Name",
+              "placeholder": "Your name"
+            },
+            "password": {
+              "label": "Password",
+              "placeholder": "Password"
+            }
+          },
+          "loading": "Registration in progress...",
+          "submit": "Register"
+        }
+      },
+      "errors": {
+        "botCheckExpired": "Bot check expired",
+        "botCheckFailed": "Please confirm you are human.",
+        "credentialsSignin": "Invalid username or password",
+        "signInFailed": "Sign in failed",
+        "userExists": {
+          "description": "This username is not available. Try another one.",
+          "title": "User already exists"
+        },
+        "validation": {
+          "description": "Your submission contains invalid information",
+          "title": "Form errors detected"
+        }
+      },
+      "password": "Password",
+      "redirecting-to": "You are being redirected to",
+      "register-here": "Create an account",
+      "sign-in": "Sign in",
+      "sign-in-description": "Enter your admin credentials",
+      "sign-in-failed": "Sign in failed",
+      "sign-in-successful": "Sign in successful",
+      "sign-in-successful-description": "You have successfully signed in",
+      "sign-out": "Sign out",
+      "signing-in": "Signing in...",
+      "signing-out": "Signing out...",
+      "success": {
+        "description": "Account created successfully",
+        "title": "User created"
+      },
+      "username": "Username",
+      "validation": {
+        "errors": {
+          "confirmPasswordRequired": "Password confirmation is required",
+          "emailInvalid": "Invalid email address",
+          "nameRequired": "Name is required",
+          "passwordMin": "Password must be at least 8 characters long",
+          "passwordsDoNotMatch": "Passwords do not match"
+        }
+      }
+    },
+    "next-intl": {
+      "select-language": "Select language"
+    },
+    "secure-api": {
+      "passphrase": {
+        "passphraseManager": ""
+      }
+    },
+    "secureApi": {
+      "botCheck": {
+        "failed": {
+          "Description": "Bot check failed. Please try again.",
+          "Title": "Bot Check Failed"
+        }
+      },
+      "passphrase": {
+        "addPath": "Add entry",
+        "editPassphrases": "edit passphrase",
+        "editPath": "edit path",
+        "loading": "Loading...",
+        "newPassphrases": "new passphrase",
+        "newPath": "new path",
+        "noPaths": "No entries existing",
+        "passphraseManager": "Passphrase Management Dashboard"
+      },
+      "rateLimit": {
+        "allowed": "Rate limit check passed. Request allowed.",
+        "allowedDescription": "Your request has been processed within the rate limits.",
+        "checkFailed": "Rate Limit Check Failed",
+        "checkFailedDescription": "There was an error checking the rate limit. Please try again.",
+        "exceeded": {
+          "description": "You have exceeded the rate limit. Please try again later.",
+          "title": "Rate Limit Exceeded"
+        },
+        "tryAgainLater": "Please try again later."
+      }
+    }
+  },
+  "generic": {
+    "components": {
+      "RegisterForm": {
+        "form": {
+          "confirmPassword": {
+            "label": "Confirm password"
+          },
+          "email": {
+            "label": "Email",
+            "placeholder": "Enter your email"
+          },
+          "name": {
+            "label": "Full name",
+            "placeholder": "Enter your full name"
+          },
+          "password": {
+            "label": "Password",
+            "placeholder": "Enter your password"
+          }
+        },
+        "loading": "Registering...",
+        "submit": "Sign up"
+      }
+    },
+    "error": "Error",
+    "errorDescription": "Something went wrong, please try again later.",
+    "errors": {
+      "credentialsSignin": "Invalid credentials. Please check your email and password.",
+      "emailTaken": {
+        "description": "This email address is already registered.",
+        "title": "Email already taken"
+      },
+      "notAuthenticated": {
+        "description": "You must be logged in to access this resource.",
+        "title": "Not authenticated"
+      },
+      "userExists": {
+        "description": "An account with these details already exists.",
+        "title": "User already exists"
+      },
+      "userNotFound": {
+        "description": "The requested user could not be found.",
+        "title": "User not found"
+      },
+      "validation": {
+        "description": "Some fields are invalid. Please check your input.",
+        "title": "Validation failed"
+      }
+    },
+    "form": {
+      "email": {
+        "confirmPasswordRequired": "Passwords do not match",
+        "emailInvalid": "The email address is not valid.",
+        "nameRequired": "Name is required",
+        "passwordMin": "Password must be at least {min} characters long."
+      }
+    },
+    "loading": "loading...",
+    "noPaths": "No Entries",
+    "password": "Password",
+    "profile": {
+      "updateSuccess": {
+        "description": "Your profile has been updated successfully.",
+        "title": "Profile updated"
+      }
+    },
+    "register": "Register",
+    "register-description": "Sign up and create a user account",
+    "register-here": "Register here",
+    "sign-in": "Sign in",
+    "sign-in-description": "Enter your credentials to access your account.",
+    "sign-in-failed": "Sign-in failed. Please try again.",
+    "sign-in-here": "Already signed in? Sign in here",
+    "sign-in-successful": "Signed in successfully",
+    "sign-in-successful-description": "You have been signed in successfully.",
+    "signing-in": "Signing in...",
+    "sorry": "We are sorry... 😢",
+    "success": {
+      "description": "The operation was completed successfully.",
+      "title": "Success"
+    },
+    "username": "Username",
+    "validation": {
+      "errors": {
+        "confirmPasswordRequired": "Password confirmation is required",
+        "emailInvalid": "Invalid email format",
+        "nameRequired": "Please enter your name",
+        "passwordMin": "Password must be at least {min} characters long",
+        "passwordRequired": "Password is required",
+        "passwordsNotMatch": "Passwords do not match",
+        "usernameRequired": "Username is required"
+      }
+    }
+  }
+}

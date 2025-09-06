@@ -1,0 +1,31 @@
+// Prisma schema for basic test table
+// Location: src/features/prisma/schema/schema.prisma
+// Generator outputs the client to src/features/prisma/generated
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_DATABASE_URL")
+}
+
+model User {
+  id               String         @id @default(cuid())
+  email            String         @unique
+  name             String?
+  password         String?
+  image            String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+}
+
+model Path {
+  id               String         @id @default(cuid())
+  path             String         @unique
+  passphrases      String[]
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+}

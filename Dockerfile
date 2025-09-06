@@ -1,0 +1,116 @@
+# syntax=docker/dockerfile:1
+
+# Node.js 22 (Debian slim for best compatibility with native deps like sharp)
+FROM node:22-bookworm-slim
+
+# Update Corepack, then enable and activate pnpm (honors the "packageManager" field if present)
+RUN npm install --global corepack@latest \
+  && corepack enable \
+  && corepack prepare pnpm@latest --activate
+
+# Ensure bash is available for interactive shells and debugging
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends bash postgresql-client \
+  && rm -rf /var/lib/apt/lists/*
+
+# Default PNPM store OUTSIDE the project directory (can be overridden at runtime)
+ENV PNPM_STORE_DIR=/home/node/.pnpm-store
+
+# Create a non-root workspace matching docker-compose volume mounts (/nextjs)
+RUN mkdir -p /nextjs "$PNPM_STORE_DIR" \
+  && chown -R node:node /nextjs "$PNPM_STORE_DIR"
+
+# Add lightweight entrypoint to fix permissions on mounted volumes, ensure pnpm store, then idle as node
+COPY --chown=root:root <<'EOS' /usr/local/bin/entrypoint.sh
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Default PNPM store and ensure it exists
+if [ -z "${PNPM_STORE_DIR:-}" ]; then
+  export PNPM_STORE_DIR="/home/node/.pnpm-store"
+fi
+
+if [ "$(id -u)" = "0" ]; then
+  # Running as root: prepare permissions and switch to node
+  mkdir -p "$PNPM_STORE_DIR" /nextjs /nextjs/node_modules || true
+  chown -R node:node "$PNPM_STORE_DIR" /nextjs || true
+
+  # Ensure Postgres database exists if init script is present
+  if [ -f /nextjs/init/00_assert-postgres-db.sh ]; then
+    echo "[entrypoint] Running Postgres DB assertion..."
+    /bin/bash /nextjs/init/00_assert-postgres-db.sh || {
+      echo "[entrypoint] Postgres DB assertion failed." >&2
+      exit 1
+    }
+  fi
+
+  # Auto-install dependencies on first run (no prompts, deterministic)
+  if [ -f package.json ] && [ ! -d node_modules ]; then
+    export CI=${CI:-true}
+    if command -v pnpm >/dev/null 2>&1; then
+      echo "[entrypoint] Installing dependencies with pnpm (root->node)..."
+      su -p -s /bin/bash -c "pnpm install --frozen-lockfile --prefer-offline --reporter=append-only --no-color" node
+    else
+      echo "[entrypoint] ERROR: pnpm not found." >&2
+      exit 1
+    fi
+  fi
+
+  
+  if [ "$#" -gt 0 ]; then
+    # If trying to run pnpm but no package.json, idle instead of crash-looping
+    if [ "${1:-}" = "pnpm" ] && [ ! -f package.json ]; then
+      echo "package.json not found in $(pwd). Idling instead of running pnpm." >&2
+      exec su -p -s /bin/bash -c "sleep infinity" node
+    fi
+    # Run requested command as node
+    exec su -p -s /bin/bash -c "$*" node
+  else
+    # Idle as node if no command provided
+    exec su -p -s /bin/bash -c "sleep infinity" node
+  fi
+else
+  # Non-root (e.g., user: 1000:1000 via compose): don't chown, just ensure dirs exist
+  mkdir -p "$PNPM_STORE_DIR" /nextjs /nextjs/node_modules || true
+  # Ensure Postgres database exists if init script is present
+  if [ -f /nextjs/init/00_assert-postgres-db.sh ]; then
+    echo "[entrypoint] Running Postgres DB assertion (non-root)..."
+    /bin/bash /nextjs/init/00_assert-postgres-db.sh || {
+      echo "[entrypoint] Postgres DB assertion failed." >&2
+      exit 1
+    }
+  fi
+  # Auto-install dependencies on first run (no prompts, deterministic)
+  if [ -f package.json ] && [ ! -d node_modules ]; then
+    export CI=${CI:-true}
+    if command -v pnpm >/dev/null 2>&1; then
+      echo "[entrypoint] Installing dependencies with pnpm..."
+      pnpm install --frozen-lockfile --prefer-offline --reporter=append-only --no-color
+    else
+      echo "[entrypoint] ERROR: pnpm not found." >&2
+      exit 1
+    fi
+  fi
+
+  if [ "$#" -gt 0 ]; then
+    if [ "${1:-}" = "pnpm" ] && [ ! -f package.json ]; then
+      echo "package.json not found in $(pwd). Idling instead of running pnpm." >&2
+      exec /bin/bash -lc "sleep infinity"
+    fi
+    exec "$@"
+  else
+    exec /bin/bash -lc "sleep infinity"
+  fi
+fi
+EOS
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# Ensure pnpm store is configured for node user so `pnpm config get store-dir` shows correctly
+RUN su -s /bin/bash -c "mkdir -p /home/node/.pnpm-store && pnpm config set store-dir /home/node/.pnpm-store --global || true" node
+
+# Also configure pnpm store for root so `pnpm config get store-dir` works when exec'ing as root
+RUN pnpm config set store-dir /home/node/.pnpm-store --global || true
+
+USER root
+WORKDIR /nextjs
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
