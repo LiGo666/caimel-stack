@@ -6,6 +6,7 @@ import { signIn } from "next-auth/react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
+import { toast } from "@/features/toast/index.client"
 
 import {
    Button,
@@ -22,7 +23,6 @@ import {
    FormLabel,
    FormMessage,
    Input,
-   toast,
 } from "@/features/shadcn/index.client"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
