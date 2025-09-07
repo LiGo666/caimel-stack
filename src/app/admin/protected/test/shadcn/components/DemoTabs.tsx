@@ -1,6 +1,6 @@
 "use client"
 
-import { Tabs, TabsList, TabsTrigger, TabsContent, Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/features/shadcn"
+import { Tabs, TabsList, TabsTrigger, TabsContent, Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/features/shadcn/index.client"
 import { useTranslations } from "next-intl"
 
 export default function DemoTabs() {

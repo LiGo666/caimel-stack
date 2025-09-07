@@ -5,10 +5,7 @@ import type { CSSProperties } from "react"
 import * as React from "react"
 import { getLocale, getMessages } from "next-intl/server"
 import { LanguageSwitcher } from "@/features/next-intl/index.client"
-import { ThemeToggle } from "@/features/shadcn"
-import { Card, Button } from "@/features/shadcn"
-import { Skeleton } from "@/features/shadcn/components/ui/skeleton"
-
+import { ThemeToggle, Card, Button, Skeleton } from "@/features/shadcn/index.client"
 import { SignInButton, SignUpButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs"
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

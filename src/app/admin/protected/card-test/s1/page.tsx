@@ -1,10 +1,7 @@
 "use client"
-import React, { useMemo, useRef, useState, useEffect } from "react"
+import React, { useRef  } from "react"
 import { motion, useScroll, useTransform } from "framer-motion"
-import { Card, CardContent, CardHeader, CardTitle } from "@/features/shadcn/components/ui/card"
-import { Input } from "@/features/shadcn/components/ui/input"
-import { Label } from "@/features/shadcn/components/ui/label"
-import { Button } from "@/features/shadcn/components/ui/button"
+import { CardContent, CardHeader, CardTitle, Input, Label, Button, Skeleton } from "@/features/shadcn/index.client"
 
 /**
  * Quartet Cards — Immersive Scrollytelling Landing Page

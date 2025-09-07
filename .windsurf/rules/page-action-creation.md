@@ -13,37 +13,25 @@ This document provides standardized guidance for creating page.tsx files and ser
 
 - Should be kept thin with minimal logic
 - Focus on UI rendering and handling user interactions
-- Must follow proper i18n integration for all user-facing text
 - Server components by default, unless client interactivity is required
 
 ### Action Files (action.ts)
 
 - Implement server-side logic and data processing
-- Apply security measures (rate limiting, bot checks)
 - Handle errors consistently with standardized ApiResponse format
-- Support internationalization for error messages and notifications
+- Support notifications
 
 ## Implementation Template for action.ts
 
 ```typescript
 "use server"
 
-import { getTranslations } from "next-intl/server"
 import { ApiResponse } from "@/features/secure-api"
-import { assertRatelimit } from "@/features/secure-api"
-import { unexpectedErrorToastContent } from "@/features/toast/lib/unexpectedErrorToastContent"
 // Example of environment variable access (server-side)
 import { DATABASE_URL, API_KEY } from "@/features/env"
 
 export async function someAction(someInput: string): Promise<ApiResponse<any>> {
-   const t = await getTranslations("app.your-path.action")
-   const tGeneric = await getTranslations("generic")
-
    try {
-      // Security check
-      const rateLimitResult = await assertRatelimit("GENERAL_ENDPOINTS")
-      if (!rateLimitResult.success) return rateLimitResult
-
       // Use env variables (server-side only)
       console.log(`Using database: ${DATABASE_URL}`)
 
@@ -54,12 +42,18 @@ export async function someAction(someInput: string): Promise<ApiResponse<any>> {
       return {
          success: true,
          data: { message: resultData },
-         toastTitle: t("success.title"),
-         toastDescription: t("success.description"),
+         toastTitle: "Success",
+         toastDescription: "Operation completed successfully",
          toastType: "success",
       }
    } catch (error) {
-      return unexpectedErrorToastContent(tGeneric, "ERROR-100002")
+      return {
+         success: false,
+         error: "Unexpected error occurred",
+         toastTitle: "Error",
+         toastDescription: "An unexpected error occurred",
+         toastType: "error",
+      }
    }
 }
 ```
@@ -70,15 +64,12 @@ export async function someAction(someInput: string): Promise<ApiResponse<any>> {
 "use client"
 
 import { useState } from "react"
-import { useTranslations } from "next-intl"
 import { someAction } from "./action"
 import { toastify } from "@/features/toast/index.client"
-import { unexpectedErrorToastContent } from "@/features/toast/lib/unexpectedErrorToastContent"
 // Example of environment variable access (client-side)
 import { NEXT_PUBLIC_TURNSTILE_SITE_KEY } from "@/features/env/index.client"
 
 export default function ExamplePage() {
-   const t = useTranslations("app.your-path.page")
    const [input, setInput] = useState("")
    const [isLoading, setIsLoading] = useState(false)
    const [result, setResult] = useState<string | null>(null)
@@ -95,13 +86,13 @@ export default function ExamplePage() {
          toastify(res) // Display toast notification
 
          if (res.success) {
-            setResult(res.data?.message ?? t("fallbackSuccess"))
+            setResult(res.data?.message ?? "Operation successful")
          } else {
-            setResult(res.toastDescription ?? t("fallbackError"))
+            setResult(res.toastDescription ?? "Operation failed")
          }
       } catch (error) {
-         toastify(unexpectedErrorToastContent(t, "ERROR-100003"))
-         setResult(t("unexpectedError"))
+         toastify({ success: false, toastTitle: "Error", toastDescription: "An unexpected error occurred", toastType: "error" })
+         setResult("An unexpected error occurred")
       } finally {
          setIsLoading(false)
       }
@@ -114,12 +105,12 @@ export default function ExamplePage() {
             <input
                value={input}
                onChange={(e) => setInput(e.target.value)}
-               placeholder={t("inputPlaceholder")}
+               placeholder="Enter input"
                disabled={isLoading}
                className="px-3 py-2 border rounded"
             />
             <button onClick={handleSubmit} disabled={isLoading} className="px-4 py-2 bg-blue-500 text-white rounded">
-               {isLoading ? t("working") : t("submit")}
+               {isLoading ? "Working..." : "Submit"}
             </button>
          </div>
 
@@ -137,14 +128,11 @@ export default function ExamplePage() {
 
 ```tsx
 import { Suspense } from "react"
-import { getTranslations } from "next-intl/server"
 // Example of environment variable access (server-side)
 import { API_URL } from "@/features/env"
 import { ClientComponent } from "./components/client-component"
 
 export default async function ServerPage() {
-   const t = await getTranslations("app.your-path.page")
-
    // Server-side env access
    const apiUrl = API_URL
 
@@ -153,15 +141,15 @@ export default async function ServerPage() {
 
    return (
       <main className="p-4">
-         <h1 className="text-2xl font-bold mb-4">{t("pageTitle")}</h1>
+         <h1 className="text-2xl font-bold mb-4">Page Title</h1>
 
          <div className="mb-4">
-            <h2 className="text-xl">{t("serverDataTitle")}</h2>
+            <h2 className="text-xl">Server Data</h2>
             <pre className="bg-gray-100 p-3 rounded">{JSON.stringify(data, null, 2)}</pre>
          </div>
 
-         <Suspense fallback={<div>{t("loading")}</div>}>
-            <ClientComponent translationNamespace="app.your-path.client-component" />
+         <Suspense fallback={<div>Loading...</div>}>
+            <ClientComponent />
          </Suspense>
       </main>
    )
@@ -188,10 +176,8 @@ export default async function ServerPage() {
 ## Best Practices
 
 1. Keep page.tsx files thin, with business logic in server actions
-2. Always use next-intl for user-facing text
-3. Handle errors consistently with toast notifications
-4. Apply proper security measures (rate limiting, bot checks) in actions
-5. Follow the ApiResponse pattern for consistent response handling
-6. Use environment variables through the env feature for type safety
-7. Prefer server components unless client interactivity is required
-8. Use shadcn components for UI consistency
+2. Handle errors consistently with toast notifications
+3. Follow the ApiResponse pattern for consistent response handling
+4. Use environment variables through the env feature for type safety
+5. Prefer server components unless client interactivity is required
+6. Use shadcn components for UI consistency

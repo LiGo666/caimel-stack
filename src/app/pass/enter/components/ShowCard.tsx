@@ -1,6 +1,6 @@
 "use client"
 
-import { Card, CardContent } from "@/features/shadcn/components/ui/card"
+import { Card, CardContent } from "@/features/shadcn/index.client"
 import { useState, useEffect } from "react"
 import { getNumbers } from "../action"
 

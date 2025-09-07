@@ -3,11 +3,11 @@
 import * as React from "react"
 import { signOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import { Button } from "@/features/shadcn/components/ui/button"
+import { Button } from "@/features/shadcn/index.client"
 import { useTranslations } from "next-intl"
 
 export interface SignOutButtonProps {
-  callbackUrl?: string
+   callbackUrl?: string
 }
 
 export function SignOutButton({ callbackUrl = "/" }: SignOutButtonProps) {

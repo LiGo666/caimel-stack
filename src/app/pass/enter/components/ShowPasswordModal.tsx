@@ -1,9 +1,6 @@
 "use client"
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/features/shadcn/components/ui/dialog"
-import { Button } from "@/features/shadcn/components/ui/button"
-import { Input } from "@/features/shadcn/components/ui/input"
-import { Label } from "@/features/shadcn/components/ui/label"
+import { Button, Dialog, DialogContent, DialogHeader, DialogTitle, Input, Label } from "@/features/shadcn/index.client"
 import { useState } from "react"
 import { getNumbers } from "../action"
 
@@ -40,7 +37,7 @@ export default function ShowPasswordModal({ onSuccess }: ShowPasswordModalProps)
       <div className="relative min-h-screen">
          {/* Blurred background overlay */}
          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40" />
-         
+
          {/* Password Modal */}
          <div className="fixed inset-0 flex items-center justify-center z-50">
             <Dialog open={true} onOpenChange={() => {}}>

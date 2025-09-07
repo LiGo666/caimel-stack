@@ -10,7 +10,7 @@ import {
    DropdownMenuLabel,
    DropdownMenuSeparator,
    DropdownMenuTrigger,
-} from "@/features/shadcn/components/ui/dropdown-menu"
+} from "@/features/shadcn/index.client"
 
 /**
  * LanguageSwitcher component that allows users to switch between supported locales.

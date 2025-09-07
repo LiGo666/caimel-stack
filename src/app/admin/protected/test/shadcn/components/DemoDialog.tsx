@@ -12,7 +12,7 @@ import {
    DialogTitle,
    DialogTrigger,
    Separator,
-} from "@/features/shadcn"
+} from "@/features/shadcn/index.client"
 
 export default function DemoDialog() {
    const t = useTranslations("app.admin.test.shadcn.components.dialog")

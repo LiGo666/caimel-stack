@@ -1,6 +1,6 @@
 "use client"
 
-import { Button, Separator, Badge } from "@/features/shadcn"
+import { Button, Separator, Badge } from "@/features/shadcn/index.client"
 import { Plus, Loader2 } from "lucide-react"
 import { useTranslations } from "next-intl"
 

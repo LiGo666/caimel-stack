@@ -6,10 +6,22 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
-import { Button } from "@/features/shadcn/components/ui/button"
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/features/shadcn/components/ui/card"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/features/shadcn/components/ui/form"
-import { Input } from "@/features/shadcn/components/ui/input"
+import {
+   Button,
+   Card,
+   CardHeader,
+   CardTitle,
+   CardDescription,
+   CardContent,
+   CardFooter,
+   Form,
+   FormControl,
+   FormField,
+   FormItem,
+   FormLabel,
+   FormMessage,
+   Input,
+} from "@/features/shadcn/index.client"
 
 import { toastify } from "@/features/toast/index.client"
 import { useTranslations } from "next-intl"

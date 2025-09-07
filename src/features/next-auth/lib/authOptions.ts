@@ -1,6 +1,6 @@
 import { AuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
-import { env } from "@/features/env"
+import { ADMIN_USERNAME, ADMIN_PASSWORD, NEXTAUTH_SECRET } from "@/features/env"
 
 declare module "next-auth" {
    interface User {
@@ -20,8 +20,8 @@ export const authOptions: AuthOptions = {
             if (!credentials?.username || !credentials?.password) return null
 
             // Validate against admin credentials from environment variables
-            if (credentials.username === env.ADMIN_USERNAME && credentials.password === env.ADMIN_PASSWORD) {
-               return { id: "admin", name: env.ADMIN_USERNAME, email: env.ADMIN_USERNAME }
+            if (credentials.username === ADMIN_USERNAME && credentials.password === ADMIN_PASSWORD) {
+               return { id: "admin", name: ADMIN_USERNAME, email: ADMIN_USERNAME }
             }
 
             return null
@@ -31,7 +31,7 @@ export const authOptions: AuthOptions = {
    // Use custom app routes for auth pages
    pages: { signIn: "/admin/auth/signin", signOut: "/admin/auth/signout" },
    session: { strategy: "jwt" },
-   secret: env.NEXTAUTH_SECRET,
+   secret: NEXTAUTH_SECRET,
    callbacks: {
       jwt({ token, user }) {
          if (user) {

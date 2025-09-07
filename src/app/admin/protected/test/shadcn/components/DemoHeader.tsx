@@ -1,6 +1,6 @@
 "use client"
 
-import { ThemeToggle, Button } from "@/features/shadcn"
+import { ThemeToggle, Button } from "@/features/shadcn/index.client"
 import { Github } from "lucide-react"
 import { useTranslations } from "next-intl"
 

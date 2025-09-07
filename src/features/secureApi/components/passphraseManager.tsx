@@ -1,23 +1,27 @@
 "use client"
 import React, { useState, useEffect } from "react"
-import { Button } from "@/features/shadcn/components/ui/button"
-import { Input } from "@/features/shadcn/components/ui/input"
-import { Trash2, Plus, Check, X, ArrowUpDown, ChevronDown, Pencil } from "lucide-react"
-import { toastify } from "@/features/toast/components/toast"
-import { getAllPathsAction, createPathAction, updatePathAction, deletePathAction } from "../actions/pathPassphraseActions"
-import { ToastType } from "@/features/toast/types/toast"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/features/shadcn/components/ui/table"
 import {
-   DropdownMenu,
-   DropdownMenuContent,
+   Button,
+   Input,
+   Checkbox,
    DropdownMenuItem,
+   DropdownMenuContent,
    DropdownMenuTrigger,
    DropdownMenuLabel,
    DropdownMenuSeparator,
    DropdownMenuCheckboxItem,
-} from "@/features/shadcn/components/ui/dropdown-menu"
-import { Checkbox } from "@/features/shadcn/components/ui/checkbox"
-import { Skeleton } from "@/features/shadcn/components/ui/skeleton"
+   Skeleton,
+   Table,
+   TableBody,
+   TableCell,
+   TableHead,
+   TableHeader,
+   TableRow,
+} from "@/features/shadcn/index.client"
+import { Trash2, Plus, Check, X, ArrowUpDown, ChevronDown, Pencil } from "lucide-react"
+import { toastify } from "@/features/toast/components/toast"
+import { getAllPathsAction, createPathAction, updatePathAction, deletePathAction } from "../actions/pathPassphraseActions"
+import { ToastType } from "@/features/toast/types/toast"
 import {
    ColumnDef,
    ColumnFiltersState,

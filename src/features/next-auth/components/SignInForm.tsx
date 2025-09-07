@@ -7,11 +7,23 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
-import { Button } from "@/features/shadcn/components/ui/button"
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/features/shadcn/components/ui/card"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/features/shadcn/components/ui/form"
-import { Input } from "@/features/shadcn/components/ui/input"
-import { toast } from "@/features/toast/index.client"
+import {
+   Button,
+   Card,
+   CardHeader,
+   CardTitle,
+   CardDescription,
+   CardContent,
+   CardFooter,
+   Form,
+   FormControl,
+   FormField,
+   FormItem,
+   FormLabel,
+   FormMessage,
+   Input,
+   toast,
+} from "@/features/shadcn/index.client"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
 import { unexpectedErrorToastContent } from "@/features/toast/index.client"

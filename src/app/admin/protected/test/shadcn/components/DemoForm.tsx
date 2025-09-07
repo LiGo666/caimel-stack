@@ -29,7 +29,7 @@ import {
    FormLabel,
    FormMessage,
    Separator,
-} from "@/features/shadcn"
+} from "@/features/shadcn/index.client"
 import { toast } from "sonner"
 import { useTranslations } from "next-intl"
 

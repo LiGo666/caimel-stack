@@ -5,8 +5,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/features/next-auth"
 import { SignOutButton } from "@/features/next-auth/index.client"
 import { redirect } from "next/navigation"
-import { Card } from "@/features/shadcn/components/ui/card"
-import { Skeleton } from "@/features/shadcn/components/ui/skeleton"
+import { Card, Skeleton } from "@/features/shadcn/index.client"
 import * as React from "react"
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {

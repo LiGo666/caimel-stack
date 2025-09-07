@@ -13,7 +13,7 @@ import {
    TableBody,
    TableCell,
    Badge,
-} from "@/features/shadcn"
+} from "@/features/shadcn/index.client"
 import { useTranslations } from "next-intl"
 
 const rows = [

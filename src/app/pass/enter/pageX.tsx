@@ -1,10 +1,6 @@
 "use client"
 
-import { Card, CardContent } from "@/features/shadcn/components/ui/card"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/features/shadcn/components/ui/dialog"
-import { Button } from "@/features/shadcn/components/ui/button"
-import { Input } from "@/features/shadcn/components/ui/input"
-import { Label } from "@/features/shadcn/components/ui/label"
+import { Button, Card, CardContent, Dialog, DialogContent, DialogHeader, DialogTitle, Input, Label } from "@/features/shadcn/index.client"
 import { useSession, signIn } from "next-auth/react"
 import { useState, useEffect } from "react"
 import { getNumbers } from "./action"

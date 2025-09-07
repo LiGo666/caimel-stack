@@ -1,9 +1,9 @@
 import "server-only"
 import { createClient, type RedisClientType } from "redis"
-import { env, isDev } from "@/features/env"
+import { REDIS_HOSTNAME, REDIS_PASSWORD, isDev } from "@/features/env"
 
 // Build URL from validated env
-const url = `redis://:${encodeURIComponent(env.REDIS_PASSWORD)}@${env.REDIS_HOSTNAME}:6379`
+const url = `redis://:${encodeURIComponent(REDIS_PASSWORD)}@${REDIS_HOSTNAME}:6379`
 
 // Reuse a single instance across hot-reloads in dev
 // and across Next.js module reloads.
