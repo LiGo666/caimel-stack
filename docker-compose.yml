@@ -28,6 +28,9 @@ services:
          OPENAI_API_KEY: ${OPENAI_API_KEY}
          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
          CLERK_SECRET_KEY: ${CLERK_SECRET_KEY}
+         MINIO_ENDPOINT: ${MINIO_ENDPOINT}
+         MINIO_ACCESS_KEY: ${RANDOM_USERNAME}
+         MINIO_SECRET_KEY: ${STRONG_PASSWORD}
       volumes:
          - ./:/nextjs:rw
          - volume_nextjs_pnpm_store:/home/node/.pnpm-store:rw
@@ -101,6 +104,28 @@ services:
       healthcheck:
          test: ["CMD", "true"]
 
+   minio:
+      image: minio/minio:latest
+      restart: unless-stopped
+      ports:
+         - "127.0.0.1:9001:9001"
+      environment:
+         MINIO_ROOT_USER: ${RANDOM_USERNAME}
+         MINIO_ROOT_PASSWORD: ${STRONG_PASSWORD}
+         MINIO_CONSOLE_ADDRESS: ":9001"
+         MINIO_ENDPOINT: ${MINIO_ENDPOINT}
+      volumes:
+         - volume_minio_data:/data
+      command: server /data --console-address ":9001"
+      networks:
+         - caimel-stack
+         - proxy
+      healthcheck:
+         test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+         interval: 30s
+         timeout: 20s
+         retries: 3
+
 networks:
    proxy:
       external: true
@@ -111,3 +136,5 @@ volumes:
    volume_nextjs_pnpm_store:
    volume_redis_db:
    volume_postgres_db:
+   volume_minio_data:
+      external: true
