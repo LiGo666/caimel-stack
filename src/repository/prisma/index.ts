@@ -1,3 +1,3 @@
-// Barrel export for Prisma-related modules
+import "server-only"
 export * from "./lib/client"
 export * from "../../features/secureApi/actions/pathPassphraseActions"

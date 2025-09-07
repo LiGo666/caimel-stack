@@ -1,25 +1,12 @@
 "use server"
 
-import { z } from "zod"
 import { auth } from "@clerk/nextjs/server"
 import { getTranslations } from "next-intl/server"
 import { ApiResponse, assertRatelimit } from "@/features/secureApi"
 import { minioService } from "../lib/minio-client"
 import { prisma } from "@/repository/prisma"
 import { jobQueue } from "@/features/job-queue"
-
-// Schema for creating episode record after direct upload
-export const CreateEpisodeRecordSchema = z.object({
-  episodeId: z.string(),
-  title: z.string().min(1).max(200),
-  description: z.string().optional(),
-  fileName: z.string(),
-  fileSize: z.number().positive(),
-  objectKey: z.string(),
-  contentType: z.string(),
-})
-
-export type CreateEpisodeRecordInput = z.infer<typeof CreateEpisodeRecordSchema>
+import { CreateEpisodeRecordSchema, CreateEpisodeRecordInput } from "../schemas/episode-record"
 
 export async function createEpisodeRecord(params: CreateEpisodeRecordInput): Promise<ApiResponse> {
   const t = await getTranslations("app.episodes.upload.action")
