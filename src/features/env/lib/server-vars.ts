@@ -41,6 +41,17 @@ const EnvSchema = z.object({
       .string()
       .min(1, "POSTGRES_DATABASE_URL is required")
       .refine((v) => v.startsWith("postgres://"), "POSTGRES_DATABASE_URL must start with 'postgres://'"),
+
+   // MinIO Object Storage
+   MINIO_ENDPOINT: z.string().min(1, "MINIO_ENDPOINT is required"),
+   MINIO_ACCESS_KEY: z.string().min(1, "MINIO_ACCESS_KEY is required"),
+   MINIO_SECRET_KEY: z.string().min(1, "MINIO_SECRET_KEY is required"),
+
+   // Optional OpenAI API for additional features
+   OPENAI_API_KEY: z.string().optional(),
+   
+   // Optional HuggingFace token for accessing gated models
+   HUGGINGFACE_TOKEN: z.string().optional(),
 })
 
 export type AppEnv = z.infer<typeof EnvSchema>

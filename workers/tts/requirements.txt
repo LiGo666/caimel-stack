@@ -1,0 +1,20 @@
+torch>=2.4.0
+torchaudio>=2.4.0
+TTS>=0.22.0
+transformers>=4.44.0
+numpy>=1.24.0
+scipy>=1.11.0
+librosa>=0.10.0
+soundfile>=0.12.0
+redis>=5.0.0
+psycopg2-binary>=2.9.0
+minio>=7.2.0
+prometheus-client>=0.20.0
+pydantic>=2.0.0
+python-multipart>=0.0.6
+fastapi>=0.100.0
+uvicorn>=0.23.0
+phonemizer>=3.2.0
+# espeak-ng is installed as a system package, not a Python package
+mecab-python3>=1.0.6
+unidic-lite>=1.0.8

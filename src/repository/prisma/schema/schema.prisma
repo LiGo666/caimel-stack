@@ -18,8 +18,14 @@ model User {
   name             String?
   password         String?
   image            String?
+  role             UserRole       @default(LABELER)
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
+  
+  // Relations
+  episodes         Episode[]
+  speakerLabels    SpeakerLabel[]
+  synthesisRequests SynthesisRequest[]
 }
 
 model Path {
@@ -28,4 +34,336 @@ model Path {
   passphrases      String[]
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
+}
+
+// Episodes represent uploaded audio files (radio plays, podcasts, etc.)
+model Episode {
+  id               String         @id @default(cuid())
+  title            String
+  description      String?
+  originalFilename String
+  duration         Float?         // Duration in seconds
+  sampleRate       Int?
+  channels         Int?
+  format           String?        // MP3, WAV, etc.
+  fileSize         BigInt
+  s3Key            String         @unique // MinIO storage key
+  uploadedBy       String
+  status           EpisodeStatus  @default(UPLOADED)
+  processingStage  ProcessingStage @default(PENDING)
+  errorMessage     String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  
+  // Relations
+  uploader         User           @relation(fields: [uploadedBy], references: [id])
+  transcriptSegments TranscriptSegment[]
+  diarizationSegments DiarizationSegment[]
+  speakerEmbeddings SpeakerEmbedding[]
+  jobs             Job[]
+  speakers         Speaker[]
+  
+  @@index([status, processingStage])
+  @@index([uploadedBy])
+}
+
+// Transcript segments from WhisperX with word-level timestamps
+model TranscriptSegment {
+  id               String         @id @default(cuid())
+  episodeId        String
+  startTime        Float          // Start time in seconds
+  endTime          Float          // End time in seconds
+  text             String
+  confidence       Float?
+  language         String?
+  wordTimestamps   Json?          // Word-level timestamps from WhisperX
+  s3Key            String?        // Path to segment audio file if extracted
+  createdAt        DateTime       @default(now())
+  
+  // Relations
+  episode          Episode        @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  
+  @@index([episodeId, startTime])
+}
+
+// Diarization segments from pyannote.audio with speaker assignments
+model DiarizationSegment {
+  id               String         @id @default(cuid())
+  episodeId        String
+  startTime        Float          // Start time in seconds
+  endTime          Float          // End time in seconds
+  speakerId        String?        // Auto-assigned speaker ID (spk_00, spk_01, etc.)
+  confidence       Float?
+  s3Key            String?        // Path to segment audio file
+  createdAt        DateTime       @default(now())
+  
+  // Relations
+  episode          Episode        @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  speaker          Speaker?       @relation(fields: [speakerId], references: [id])
+  
+  @@index([episodeId, startTime])
+  @@index([speakerId])
+}
+
+// Speakers identified across episodes with embeddings and metadata
+model Speaker {
+  id               String         @id @default(cuid())
+  episodeId        String
+  autoId           String         // Auto-assigned ID (spk_00, spk_01, etc.)
+  displayName      String?        // Human-assigned name
+  description      String?
+  gender           Gender?
+  estimatedAge     String?        // Age range estimate
+  voiceCharacteristics Json?      // Voice quality metadata
+  isVerified       Boolean        @default(false)
+  totalDuration    Float          @default(0) // Total speech duration in seconds
+  segmentCount     Int            @default(0)
+  averageConfidence Float?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  
+  // Relations
+  episode          Episode        @relation(fields: [episodeId], references: [id])
+  embeddings       SpeakerEmbedding[]
+  segments         DiarizationSegment[]
+  labels           SpeakerLabel[]
+  voiceModels      VoiceModel[]
+  synthesisRequests SynthesisRequest[]
+  
+  @@unique([episodeId, autoId])
+  @@index([episodeId])
+}
+
+// Speaker embeddings from ECAPA-TDNN or x-vector models
+model SpeakerEmbedding {
+  id               String         @id @default(cuid())
+  speakerId        String
+  episodeId        String
+  modelName        String         // ECAPA-TDNN, x-vector, etc.
+  modelVersion     String
+  embedding        Unsupported("vector(512)")? // pgvector for similarity search
+  embeddingHash    String         // SHA256 of embedding for deduplication
+  s3Key            String         // Path to .npy file in MinIO
+  segmentStartTime Float?         // If from specific segment
+  segmentEndTime   Float?
+  confidence       Float?
+  createdAt        DateTime       @default(now())
+  
+  // Relations
+  speaker          Speaker        @relation(fields: [speakerId], references: [id], onDelete: Cascade)
+  episode          Episode        @relation(fields: [episodeId], references: [id])
+  
+  @@unique([speakerId, embeddingHash])
+  @@index([modelName, modelVersion])
+  @@index([episodeId])
+}
+
+// Human-curated speaker labels and corrections
+model SpeakerLabel {
+  id               String         @id @default(cuid())
+  speakerId        String
+  labeledBy        String
+  oldName          String?        // Previous name if this is a correction
+  newName          String         // New human-assigned name
+  confidence       Float?         // Human confidence in label (1-5 scale)
+  notes            String?
+  isApproved       Boolean        @default(false)
+  createdAt        DateTime       @default(now())
+  
+  // Relations
+  speaker          Speaker        @relation(fields: [speakerId], references: [id])
+  user             User           @relation(fields: [labeledBy], references: [id])
+  
+  @@index([speakerId])
+  @@index([labeledBy])
+}
+
+// Voice models trained for TTS (XTTS-v2, CosyVoice, etc.)
+model VoiceModel {
+  id               String         @id @default(cuid())
+  speakerId        String
+  modelType        TTSModelType   @default(XTTS_V2)
+  version          String         @default("1")
+  s3KeyModel       String         // Path to trained model files
+  s3KeyConfig      String?        // Path to model configuration
+  trainingDuration Float          // Duration of training data in seconds
+  trainingSegments Int            // Number of segments used for training
+  qualityScore     Float?         // MOS-proxy or similarity score
+  isReady          Boolean        @default(false)
+  errorMessage     String?
+  hyperparameters  Json?          // Training hyperparameters
+  checksumModel    String?        // Model file checksum for integrity
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  
+  // Relations
+  speaker          Speaker        @relation(fields: [speakerId], references: [id])
+  synthesisRequests SynthesisRequest[]
+  jobs             Job[]
+  
+  @@unique([speakerId, modelType, version])
+  @@index([speakerId])
+  @@index([isReady])
+}
+
+// TTS synthesis requests and outputs
+model SynthesisRequest {
+  id               String         @id @default(cuid())
+  speakerId        String?
+  voiceModelId     String?
+  requestedBy      String
+  inputText        String
+  outputS3Key      String?        // Generated audio file
+  synthesisType    SynthesisType  @default(ZERO_SHOT)
+  status           SynthesisStatus @default(PENDING)
+  errorMessage     String?
+  duration         Float?         // Output audio duration
+  qualityScore     Float?         // Quality metrics
+  parameters       Json?          // Speed, pitch, emphasis controls
+  provenanceData   Json?          // Model versions, timestamps, etc.
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  
+  // Relations
+  speaker          Speaker?       @relation(fields: [speakerId], references: [id])
+  voiceModel       VoiceModel?    @relation(fields: [voiceModelId], references: [id])
+  user             User           @relation(fields: [requestedBy], references: [id])
+  job              Job?
+  
+  @@index([requestedBy])
+  @@index([status])
+  @@index([speakerId])
+}
+
+// Job queue for batch processing pipeline
+model Job {
+  id               String         @id @default(cuid())
+  type             JobType
+  priority         JobPriority    @default(NORMAL)
+  status           JobStatus      @default(QUEUED)
+  progress         Float          @default(0) // 0-100 percentage
+  errorMessage     String?
+  retryCount       Int            @default(0)
+  maxRetries       Int            @default(3)
+  startedAt        DateTime?
+  completedAt      DateTime?
+  estimatedDuration Int?          // Estimated duration in seconds
+  actualDuration   Int?           // Actual duration in seconds
+  workerId         String?        // Which worker processed this job
+  inputData        Json           // Job-specific input parameters
+  outputData       Json?          // Job results
+  dependencies     String[]       // IDs of jobs this depends on
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  
+  // Relations
+  episode          Episode?       @relation(fields: [episodeId], references: [id])
+  episodeId        String?
+  voiceModel       VoiceModel?    @relation(fields: [voiceModelId], references: [id])
+  voiceModelId     String?
+  synthesisRequest SynthesisRequest? @relation(fields: [synthesisRequestId], references: [id])
+  synthesisRequestId String?      @unique
+  
+  @@index([type, status])
+  @@index([status, priority])
+  @@index([createdAt])
+}
+
+// Audit trail for provenance and reproducibility
+model AuditLog {
+  id               String         @id @default(cuid())
+  entityType       String         // Episode, Speaker, VoiceModel, etc.
+  entityId         String
+  action           String         // CREATE, UPDATE, DELETE, PROCESS
+  userId           String?
+  changes          Json?          // What changed
+  metadata         Json?          // Context, model versions, etc.
+  ipAddress        String?
+  userAgent        String?
+  createdAt        DateTime       @default(now())
+  
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@index([userId])
+}
+
+// Enums
+enum UserRole {
+  ADMIN
+  LABELER
+  CONSUMER
+}
+
+enum EpisodeStatus {
+  UPLOADED
+  PROCESSING
+  COMPLETED
+  FAILED
+  ARCHIVED
+}
+
+enum ProcessingStage {
+  PENDING
+  TRANSCRIPTION
+  DIARIZATION
+  EMBEDDING_EXTRACTION
+  CLUSTERING
+  CURATION_READY
+  DATASET_BUILDING
+  COMPLETED
+  FAILED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  UNKNOWN
+}
+
+enum TTSModelType {
+  XTTS_V2
+  COSYVOICE_2
+  CUSTOM
+}
+
+enum SynthesisType {
+  ZERO_SHOT
+  FINE_TUNED
+  STYLE_TRANSFER
+}
+
+enum SynthesisStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum JobType {
+  AUDIO_UPLOAD
+  TRANSCRIPTION
+  DIARIZATION
+  EMBEDDING_EXTRACTION
+  SPEAKER_CLUSTERING
+  DATASET_CURATION
+  TTS_TRAINING
+  TTS_SYNTHESIS
+  QUALITY_EVALUATION
+}
+
+enum JobPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum JobStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+  RETRYING
 }
