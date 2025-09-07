@@ -37,7 +37,8 @@ export async function synthesizeSpeech(
       if (!rateLimitResult.success) return rateLimitResult
 
       // Get current user
-      const { userId } = await auth()
+      const session = await auth()
+      const userId = session.userId
       if (!userId) {
          return {
             success: false,

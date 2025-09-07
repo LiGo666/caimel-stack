@@ -8,45 +8,50 @@ import { Input } from "@/features/shadcn/components/ui/input"
 import { Label } from "@/features/shadcn/components/ui/label"
 import { Textarea } from "@/features/shadcn/components/ui/textarea"
 import { Progress } from "@/features/shadcn/components/ui/progress"
-import { uploadEpisode } from "../actions/upload-episode"
-import type { ApiResponse } from "@/features/secureApi"
-import { toastify } from "@/features/toast/index.client"
+import { useDirectUpload } from "../hooks/use-direct-upload"
 import { cn } from "@/features/shadcn/lib/utils"
 import { Upload, FileAudio, X } from "lucide-react"
 
-interface UploadDropzoneProps {
+interface DirectUploadDropzoneProps {
    onUploadComplete?: (episodeId: string, uploadUrl: string) => void
    className?: string
 }
 
-export function UploadDropzone({ onUploadComplete, className }: UploadDropzoneProps) {
+export function DirectUploadDropzone({ onUploadComplete, className }: DirectUploadDropzoneProps) {
    const t = useTranslations("app.episodes.upload")
    const [isDragOver, setIsDragOver] = useState(false)
    const [selectedFile, setSelectedFile] = useState<File | null>(null)
    const [title, setTitle] = useState("")
    const [description, setDescription] = useState("")
-   const [isUploading, setIsUploading] = useState(false)
-   const [uploadProgress, setUploadProgress] = useState(0)
+   
+   // Use our new direct upload hook
+   const { upload, isUploading, progress, currentEpisode, reset } = useDirectUpload({
+      onSuccess: (episodeId, uploadUrl) => {
+         // Reset form
+         setSelectedFile(null)
+         setTitle("")
+         setDescription("")
+         
+         // Call the callback if provided
+         onUploadComplete?.(episodeId, uploadUrl)
+      },
+      onError: (error) => {
+         // Handle error in a client-safe way
+         alert(`Upload failed: ${error}`)
+      }
+   })
 
    const validateFile = (file: File): boolean => {
-      const maxSize = 500 * 1024 * 1024 // 500MB
+      const maxSize = 200 * 1024 * 1024 // 200MB
       const allowedTypes = ["audio/mpeg", "audio/wav", "audio/mp3", "audio/x-wav"]
 
       if (file.size > maxSize) {
-         toastify({
-            toastTitle: t("error.fileTooBig.title"),
-            toastDescription: t("error.fileTooBig.description", { size: Math.round(file.size / 1024 / 1024) }),
-            toastType: "error",
-         })
+         alert(t("error.fileTooBig.description", { size: Math.round(file.size / 1024 / 1024) }))
          return false
       }
 
       if (!allowedTypes.includes(file.type)) {
-         toastify({
-            toastTitle: t("error.invalidFormat.title"),
-            toastDescription: t("error.invalidFormat.description"),
-            toastType: "error",
-         })
+         alert(t("error.invalidFormat.description"))
          return false
       }
 
@@ -67,7 +72,7 @@ export function UploadDropzone({ onUploadComplete, className }: UploadDropzonePr
             }
          }
       },
-      [title],
+      [title, t],
    )
 
    const handleDrop = useCallback(
@@ -97,62 +102,17 @@ export function UploadDropzone({ onUploadComplete, className }: UploadDropzonePr
       e.preventDefault()
 
       if (!selectedFile || !title.trim()) {
-         toastify({
-            toastTitle: t("error.missingData.title"),
-            toastDescription: t("error.missingData.description"),
-            toastType: "error",
-         })
+         alert(t("error.missingData.description"))
          return
       }
 
-      setIsUploading(true)
-      setUploadProgress(0)
-
-      try {
-         const formData = new FormData()
-         formData.append("file", selectedFile)
-         formData.append("title", title.trim())
-         if (description.trim()) {
-            formData.append("description", description.trim())
-         }
-
-         // Simulate upload progress
-         const progressInterval = setInterval(() => {
-            setUploadProgress((prev) => Math.min(prev + 10, 90))
-         }, 200)
-
-         const result = await uploadEpisode(formData)
-         clearInterval(progressInterval)
-         setUploadProgress(100)
-
-         toastify(result)
-
-         if (result.success && result.data) {
-            // Reset form
-            setSelectedFile(null)
-            setTitle("")
-            setDescription("")
-            setUploadProgress(0)
-
-            // Type assertion for the data structure
-            const data = result.data as { episodeId: string; uploadUrl: string }
-            onUploadComplete?.(data.episodeId, data.uploadUrl)
-         }
-      } catch (error) {
-         console.error("Upload error:", error)
-         toastify({
-            toastTitle: t("error.uploadFailed.title"),
-            toastDescription: t("error.uploadFailed.description"),
-            toastType: "error",
-         })
-      } finally {
-         setIsUploading(false)
-      }
+      // Use our direct upload hook to handle the upload
+      await upload(title.trim(), description.trim() || undefined, selectedFile)
    }
 
    const removeFile = () => {
       setSelectedFile(null)
-      setUploadProgress(0)
+      reset()
    }
 
    return (
@@ -181,6 +141,7 @@ export function UploadDropzone({ onUploadComplete, className }: UploadDropzonePr
                            </label>
                         </Button>
                         <p className="text-xs text-muted-foreground">{t("dropzone.formats")}</p>
+                        <p className="text-xs font-medium text-primary">Supports files up to 200MB</p>
                      </div>
                   </div>
                ) : (
@@ -199,8 +160,8 @@ export function UploadDropzone({ onUploadComplete, className }: UploadDropzonePr
                      </div>
                      {isUploading && (
                         <div className="mt-4">
-                           <Progress value={uploadProgress} className="h-2" />
-                           <p className="text-sm text-muted-foreground mt-1">{t("uploading.progress", { progress: uploadProgress })}</p>
+                           <Progress value={progress} className="h-2" />
+                           <p className="text-sm text-muted-foreground mt-1">{t("uploading.progress", { progress })}</p>
                         </div>
                      )}
                   </div>

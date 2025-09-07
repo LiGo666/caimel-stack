@@ -1,12 +1,12 @@
 import { getTranslations } from "next-intl/server"
 import { Card, CardContent, CardHeader, CardTitle } from "@/features/shadcn/components/ui/card"
-import { UploadDropzone } from "@/features/file-upload/components/upload-dropzone"
+import { DirectUploadDropzone } from "@/features/file-upload/components/direct-upload-dropzone"
 import { ArrowLeft } from "lucide-react"
 import { Button } from "@/features/shadcn/components/ui/button"
 import Link from "next/link"
 
 export default async function UploadEpisodePage() {
-   const t = await getTranslations("app.episodes.upload")
+   const t = await getTranslations("app.audiofaker.episodes.upload")
 
    return (
       <div className="space-y-8 max-w-4xl mx-auto">
@@ -29,7 +29,7 @@ export default async function UploadEpisodePage() {
                <CardTitle>{t("form.title")}</CardTitle>
             </CardHeader>
             <CardContent>
-               <UploadDropzone />
+               <DirectUploadDropzone />
             </CardContent>
          </Card>
 

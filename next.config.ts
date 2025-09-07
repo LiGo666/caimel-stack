@@ -27,7 +27,9 @@ const securityHeaders = [
          "frame-src 'self' https://challenges.cloudflare.com",
          // Fallback for older engines
          "child-src 'self' https://challenges.cloudflare.com blob:",
-         isDev ? "connect-src 'self' ws: wss: https://*.clerk.accounts.dev https://*.clerk.com" : "connect-src 'self' https://*.clerk.accounts.dev https://*.clerk.com",
+         isDev
+            ? "connect-src 'self' ws: wss: https://*.clerk.accounts.dev https://*.clerk.com"
+            : "connect-src 'self' https://*.clerk.accounts.dev https://*.clerk.com",
          // Allow inline styles and Google Fonts stylesheet if used
          "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
          // Some browsers use style-src-elem separately

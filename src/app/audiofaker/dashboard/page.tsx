@@ -39,7 +39,7 @@ export default async function DashboardPage() {
                <p className="text-muted-foreground">{t("subtitle")}</p>
             </div>
             <Button asChild>
-               <Link href="/episodes/upload">
+               <Link href="/audiofaker/episodes/upload">
                   <Upload className="mr-2 h-4 w-4" />
                   {t("uploadEpisode")}
                </Link>
@@ -108,25 +108,25 @@ export default async function DashboardPage() {
                </CardHeader>
                <CardContent className="space-y-3">
                   <Button className="w-full justify-start" variant="outline" asChild>
-                     <Link href="/episodes/upload">
+                     <Link href="/audiofaker/episodes/upload">
                         <Upload className="mr-2 h-4 w-4" />
                         {t("quickActions.uploadEpisode")}
                      </Link>
                   </Button>
                   <Button className="w-full justify-start" variant="outline" asChild>
-                     <Link href="/speakers">
+                     <Link href="/audiofaker/speakers">
                         <Users className="mr-2 h-4 w-4" />
                         {t("quickActions.manageSpeakers")}
                      </Link>
                   </Button>
                   <Button className="w-full justify-start" variant="outline" asChild>
-                     <Link href="/synthesis">
+                     <Link href="/audiofaker/synthesis">
                         <Mic className="mr-2 h-4 w-4" />
                         {t("quickActions.synthesizeVoice")}
                      </Link>
                   </Button>
                   <Button className="w-full justify-start" variant="outline" asChild>
-                     <Link href="/jobs">
+                     <Link href="/audiofaker/jobs">
                         <Activity className="mr-2 h-4 w-4" />
                         {t("quickActions.viewJobs")}
                      </Link>

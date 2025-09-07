@@ -36,7 +36,7 @@ export function useFileUpload(options?: UseFileUploadOptions) {
                setProgress((prev) => Math.min(prev + 10, 90))
             }, 200)
 
-            const result = (await uploadEpisode(formData)) as ApiResponse<{ episodeId: string; uploadUrl: string }>
+            const result = await uploadEpisode(formData) as ApiResponse<{ episodeId: string; uploadUrl: string }>
             clearInterval(progressInterval)
             setProgress(100)
 

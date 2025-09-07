@@ -7,11 +7,9 @@ import { unexpectedErrorToastContent } from "@/features/toast/lib/unexpectedErro
 import { prisma } from "@/repository/prisma"
 import { minioService } from "../lib/minio-client"
 import { jobQueue } from "@/features/job-queue"
-import { z } from "zod"
 import { auth } from "@clerk/nextjs/server"
 import { UploadHandler } from "../lib/upload-handler"
-
-const UploadEpisodeSchema = z.object({ title: z.string().min(1).max(200), description: z.string().optional() })
+import { UploadEpisodeSchema } from "../schemas/upload-schemas"
 
 export async function uploadEpisode(formData: FormData): Promise<ApiResponse> {
    const t = await getTranslations("app.episodes.upload.action")

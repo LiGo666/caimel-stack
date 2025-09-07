@@ -1,14 +1,14 @@
 "use server"
 
 import { getTranslations } from "next-intl/server"
-import { ApiResponse } from "@/src/features/secureApi"
-import { assertRatelimit } from "@/src/features/secureApi"
-import { unexpectedErrorToastContent } from "@/src/features/toast/lib/unexpectedErrorToastContent"
-import { prisma } from "@/src/repository/prisma"
-import { jobQueue } from "@/src/features/job-queue"
+import { ApiResponse } from "@/features/secureApi"
+import { assertRatelimit } from "@/features/secureApi"
+import { unexpectedErrorToastContent } from "@/features/toast/lib/unexpectedErrorToastContent"
+import { prisma } from "@/repository/prisma"
+import { jobQueue } from "@/features/job-queue"
 import { VoiceTrainer } from "../lib/voice-trainer"
 import { z } from "zod"
-import { getCurrentUserId } from "@/src/features/next-auth"
+import { auth } from "@clerk/nextjs/server"
 
 const TrainVoiceSchema = z.object({
   speakerId: z.string().min(1),
@@ -23,7 +23,7 @@ const TrainVoiceSchema = z.object({
 
 export async function trainVoice(
   input: z.infer<typeof TrainVoiceSchema>
-): Promise<ApiResponse<{ voiceModelId: string; jobId: string }>> {
+): Promise<ApiResponse> {
   const t = await getTranslations("app.voices.train.action")
   const tGeneric = await getTranslations("generic")
 
@@ -33,7 +33,8 @@ export async function trainVoice(
     if (!rateLimitResult.success) return rateLimitResult
 
     // Get current user
-    const userId = await getCurrentUserId()
+    const session = await auth()
+    const userId = session.userId
     if (!userId) {
       return {
         success: false,
@@ -114,6 +115,6 @@ export async function trainVoice(
     }
   } catch (error) {
     console.error('Train voice error:', error)
-    return unexpectedErrorToastContent(tGeneric, "ERROR-TRAIN-001")
+    return unexpectedErrorToastContent(tGeneric, "ERROR-123546")
   }
 }

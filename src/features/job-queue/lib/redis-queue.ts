@@ -1,27 +1,17 @@
-import { Redis } from 'redis'
-import { REDIS_HOSTNAME, REDIS_PASSWORD } from '@features/env'
+import { redis, redisReady } from '@/features/redis'
 import { JobInput, Job, JobStatus, JobPriority } from '../types'
-import { prisma } from '@/src/repository/prisma'
+import { prisma } from '@/repository/prisma'
 
 class RedisQueue {
-  private redis: Redis
   private connected: boolean = false
 
   constructor() {
-    this.redis = new Redis({
-      host: REDIS_HOSTNAME,
-      password: REDIS_PASSWORD,
-      retryDelayOnFailover: 100,
-      enableReadyCheck: false,
-      maxRetriesPerRequest: null,
-    })
-
-    this.redis.on('connect', () => {
+    // Using the shared redis client from @/features/redis
+    // The client is already configured and connected
+    redisReady.then(() => {
       this.connected = true
       console.log('✅ Redis queue connected')
-    })
-
-    this.redis.on('error', (err) => {
+    }).catch((err) => {
       console.error('❌ Redis queue error:', err)
       this.connected = false
     })
@@ -45,10 +35,10 @@ class RedisQueue {
 
     // Add to Redis queue based on priority and type
     const queueKey = this.getQueueKey(input.type, input.priority || 'NORMAL')
-    await this.redis.lpush(queueKey, job.id)
+    await redis.lPush(queueKey, job.id)
 
     // Set job metadata
-    await this.redis.hset(`job:${job.id}`, {
+    await redis.hSet(`job:${job.id}`, {
       id: job.id,
       type: input.type,
       priority: input.priority || 'NORMAL',
@@ -65,7 +55,7 @@ class RedisQueue {
     
     // Try to get job from priority queues (URGENT -> HIGH -> NORMAL -> LOW)
     for (const queueKey of queueKeys) {
-      const jobId = await this.redis.brpop(queueKey, 1) // 1 second timeout
+      const jobId = await redis.brPop(queueKey, 1) // 1 second timeout
       
       if (jobId && jobId[1]) {
         const job = await prisma.job.findUnique({ 
@@ -82,7 +72,7 @@ class RedisQueue {
             const allCompleted = dependencies.every(dep => dep.status === 'COMPLETED')
             if (!allCompleted) {
               // Re-queue job if dependencies not ready
-              await this.redis.lpush(queueKey, jobId[1])
+              await redis.lPush(queueKey, jobId[1])
               continue
             }
           }
@@ -97,7 +87,7 @@ class RedisQueue {
             }
           })
 
-          await this.redis.hset(`job:${job.id}`, {
+          await redis.hSet(`job:${job.id}`, {
             status: 'RUNNING',
             startedAt: new Date().toISOString(),
             workerId,
@@ -117,14 +107,14 @@ class RedisQueue {
       data: { progress }
     })
 
-    await this.redis.hset(`job:${jobId}`, {
+    await redis.hSet(`job:${jobId}`, {
       progress: progress.toString(),
       lastUpdate: new Date().toISOString(),
       ...(message && { message })
     })
 
     // Publish progress update
-    await this.redis.publish(`job:progress:${jobId}`, JSON.stringify({
+    await redis.publish(`job:progress:${jobId}`, JSON.stringify({
       jobId,
       progress,
       message,
@@ -135,6 +125,11 @@ class RedisQueue {
   async completeJob(jobId: string, outputData?: Record<string, any>): Promise<void> {
     const completedAt = new Date()
     
+    // First get the job to access startedAt
+    const existingJob = await prisma.job.findUnique({
+      where: { id: jobId }
+    })
+    
     const job = await prisma.job.update({
       where: { id: jobId },
       data: { 
@@ -142,13 +137,13 @@ class RedisQueue {
         progress: 100,
         completedAt,
         outputData,
-        actualDuration: job.startedAt ? 
-          Math.round((completedAt.getTime() - job.startedAt.getTime()) / 1000) : 
+        actualDuration: existingJob?.startedAt ? 
+          Math.round((completedAt.getTime() - existingJob.startedAt.getTime()) / 1000) : 
           undefined
       }
     })
 
-    await this.redis.hset(`job:${jobId}`, {
+    await redis.hSet(`job:${jobId}`, {
       status: 'COMPLETED',
       progress: '100',
       completedAt: completedAt.toISOString(),
@@ -175,7 +170,7 @@ class RedisQueue {
       // Re-queue with delay
       setTimeout(async () => {
         const queueKey = this.getQueueKey(job.type, job.priority)
-        await this.redis.lpush(queueKey, jobId)
+        await redis.lPush(queueKey, jobId)
         
         await prisma.job.update({
           where: { id: jobId },
@@ -195,7 +190,7 @@ class RedisQueue {
         }
       })
 
-      await this.redis.hset(`job:${jobId}`, {
+      await redis.hSet(`job:${jobId}`, {
         status: 'FAILED',
         errorMessage: error,
         completedAt: new Date().toISOString(),
@@ -247,7 +242,7 @@ class RedisQueue {
     for (const jobType of jobTypes) {
       for (const priority of priorities) {
         const queueKey = this.getQueueKey(jobType, priority)
-        const count = await this.redis.llen(queueKey)
+        const count = await redis.lLen(queueKey)
         stats[`${jobType}:${priority}`] = count
       }
     }

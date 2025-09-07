@@ -57,6 +57,9 @@ class ASRWorker:
         
         # Database connection
         self.db_url = os.environ['POSTGRES_DATABASE_URL']
+        # Fix postgres:// to postgresql:// for SQLAlchemy 2.0+
+        if self.db_url.startswith('postgres://'):
+            self.db_url = self.db_url.replace('postgres://', 'postgresql://', 1)
         self.engine = create_engine(self.db_url)
 
     def setup_whisper(self):

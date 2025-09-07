@@ -28,7 +28,7 @@ services:
          OPENAI_API_KEY: ${OPENAI_API_KEY}
          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
          CLERK_SECRET_KEY: ${CLERK_SECRET_KEY}
-         MINIO_ENDPOINT: minio:9000
+         MINIO_ENDPOINT: https://upload-3afb6505.christiangotthardt.de
          MINIO_ACCESS_KEY: ${RANDOM_USERNAME}
          MINIO_SECRET_KEY: ${STRONG_PASSWORD}
          HUGGINGFACE_TOKEN: ${HUGGINGFACE_TOKEN}
@@ -116,11 +116,13 @@ services:
          MINIO_ROOT_USER: ${RANDOM_USERNAME}
          MINIO_ROOT_PASSWORD: ${STRONG_PASSWORD}
          MINIO_CONSOLE_ADDRESS: ":9001"
+         MINIO_ENDPOINT: "https://upload-3afb6505.christiangotthardt.de"
       volumes:
          - volume_minio_data:/data
       command: server /data --console-address ":9001"
       networks:
          - caimel-stack
+         - proxy
       healthcheck:
          test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
          interval: 30s
@@ -151,11 +153,11 @@ services:
          - postgres
       deploy:
          resources:
-           reservations:
-             devices:
-               - driver: nvidia
-                 count: 1
-                 capabilities: [gpu]
+            reservations:
+               devices:
+                  - driver: nvidia
+                    count: 1
+                    capabilities: [gpu]
 
    # Diarization Worker for speaker separation and clustering
    diarization-worker:
@@ -181,11 +183,11 @@ services:
          - postgres
       deploy:
          resources:
-           reservations:
-             devices:
-               - driver: nvidia
-                 count: 1
-                 capabilities: [gpu]
+            reservations:
+               devices:
+                  - driver: nvidia
+                    count: 1
+                    capabilities: [gpu]
 
    # TTS Worker for voice cloning and synthesis
    tts-worker:
@@ -211,11 +213,11 @@ services:
          - postgres
       deploy:
          resources:
-           reservations:
-             devices:
-               - driver: nvidia
-                 count: 1
-                 capabilities: [gpu]
+            reservations:
+               devices:
+                  - driver: nvidia
+                    count: 1
+                    capabilities: [gpu]
 
    # Prometheus for metrics collection
    prometheus:
@@ -227,10 +229,10 @@ services:
          - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
          - volume_prometheus_data:/prometheus
       command:
-         - '--config.file=/etc/prometheus/prometheus.yml'
-         - '--storage.tsdb.path=/prometheus'
-         - '--web.console.libraries=/etc/prometheus/console_libraries'
-         - '--web.console.templates=/etc/prometheus/consoles'
+         - "--config.file=/etc/prometheus/prometheus.yml"
+         - "--storage.tsdb.path=/prometheus"
+         - "--web.console.libraries=/etc/prometheus/console_libraries"
+         - "--web.console.templates=/etc/prometheus/consoles"
       networks:
          - caimel-stack
 
@@ -260,5 +262,6 @@ volumes:
    volume_postgres_db:
    volume_minio_data:
    volume_models_cache:
+      external: true
    volume_prometheus_data:
    volume_grafana_data:

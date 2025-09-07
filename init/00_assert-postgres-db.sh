@@ -49,6 +49,11 @@ else
   echo "[assert-postgres-db] Database '$DB_NAME' created."
 fi
 
+# Enable pgvector extension
+echo "[assert-postgres-db] Enabling pgvector extension..."
+psql "${POSTGRES_DATABASE_URL}" -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS vector;"
+echo "[assert-postgres-db] pgvector extension enabled."
+
 # If a Prisma schema exists at the feature path, generate the client
 SCHEMA_PATH="/nextjs/src/repository/prisma/schema/schema.prisma"
 if [ -f "$SCHEMA_PATH" ]; then
@@ -67,9 +72,9 @@ if [ -f "$SCHEMA_PATH" ]; then
   if [ "${NODE_ENV:-development}" != "production" ] && command -v pnpm >/dev/null 2>&1; then
     echo "[assert-postgres-db] Applying schema to database (db push)..."
     if [ "$(id -u)" = "0" ]; then
-      su -p -s /bin/bash -c "pnpm dlx prisma db push --schema '$SCHEMA_PATH'" node
+      su -p -s /bin/bash -c "pnpm dlx prisma db push --accept-data-loss --schema '$SCHEMA_PATH'" node
     else
-      pnpm dlx prisma db push --schema "$SCHEMA_PATH"
+      pnpm dlx prisma db push --accept-data-loss --schema "$SCHEMA_PATH"
     fi
   fi
 else

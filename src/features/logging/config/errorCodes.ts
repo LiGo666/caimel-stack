@@ -20,4 +20,5 @@ export const ERROR_CATALOG = {
    "ERROR-123457": { category: "visible", description: "Passphrase management failes (client side)" },
    "ERROR-234277": { category: "visible", description: "Synthesize speech failed (server side)" },
    "ERROR-123477": { category: "visible", description: "Upload episode failed (server side)" },
+   "ERROR-123546": { category: "visible", description: "Train voice failed (server side)" },
 } as const

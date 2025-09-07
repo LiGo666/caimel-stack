@@ -18,3 +18,4 @@ phonemizer>=3.2.0
 # espeak-ng is installed as a system package, not a Python package
 mecab-python3>=1.0.6
 unidic-lite>=1.0.8
+sqlalchemy>=2.0.0
