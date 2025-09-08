@@ -1,7 +1,6 @@
-// Client-side barrel export - simplified to only export the main FileUploader component
 
-// Main file uploader component (smart upload strategy selection)
-export { FileUploader } from "./components/FileUploader"
+// Custom file uploader component that accepts a custom getPresignedUrl action
+export { CustomFileUploader } from "./components/CustomFileUploader"
 
 // Essential types needed by client code
 export type { UploadedFile } from "./types"

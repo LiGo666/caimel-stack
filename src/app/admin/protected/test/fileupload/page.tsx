@@ -1,14 +1,12 @@
 "use client"
 
-import { FileUploader, type UploadedFile } from "@/features/file-upload/index.client"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Progress } from "@/features/shadcn/index.client"
+import { CustomFileUploader, type UploadedFile } from "@/features/file-upload/index.client"
+import { exampleGetPresignedUrl } from "./(actions)/getPresignedUrl"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Progress } from "@/features/shadcn/index.client"
 import { useState } from "react"
-import { getPresignedUrl } from "@/features/file-upload/actions/upload"
 
 export default function FileUploadPage() {
    const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
-   const [testUrl, setTestUrl] = useState<string>("")
-   const [testLoading, setTestLoading] = useState(false)
    const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({})
    const [uploadSpeeds, setUploadSpeeds] = useState<Record<string, number>>({})
    const [uploading, setUploading] = useState(false)
@@ -37,29 +35,6 @@ export default function FileUploadPage() {
       setUploadProgress({})
    }
 
-   const testPresignedUrl = async () => {
-      setTestLoading(true)
-      try {
-         const response = await getPresignedUrl(
-            { fileName: "test-file.txt", fileType: "text/plain", fileSize: 1024 },
-            { bucketName: "test-bucket", uploadFolder: "test-folder" },
-         )
-
-         if (response.success && response.presignedUrl) {
-            setTestUrl(response.presignedUrl.url)
-            console.log("Presigned URL generated:", response.presignedUrl)
-         } else {
-            console.error("Failed to generate presigned URL:", response.error)
-            setTestUrl(`Error: ${response.error}`)
-         }
-      } catch (error) {
-         console.error("Error testing presigned URL:", error)
-         setTestUrl(`Error: ${error instanceof Error ? error.message : String(error)}`)
-      } finally {
-         setTestLoading(false)
-      }
-   }
-
    return (
       <div className="container mx-auto py-8">
          <Card className="max-w-3xl mx-auto">
@@ -70,17 +45,21 @@ export default function FileUploadPage() {
             <CardContent>
                <div className="mb-4">
                   <p className="text-sm text-gray-500">
-                     Smart file uploader with automatic method selection. Files ≤50MB use direct upload, 
-                     while larger files automatically use chunked upload for better reliability.
+                     Smart file uploader with automatic method selection. Files ≤50MB use direct upload, while larger files automatically use chunked
+                     upload for better reliability.
                   </p>
                </div>
-               
-               <FileUploader
+
+               <CustomFileUploader
+                  // Custom server action for getting presigned URLs
+                  customGetPresignedUrl={exampleGetPresignedUrl}
+                  // These config options will be overridden by the server action
+                  // They're only used for client-side validation
                   config={{
-                     allowedFileTypes: ["image/jpeg", "image/png", "image/gif", "application/pdf", "application/zip", "video/mp4", "video/quicktime", "application/octet-stream"],
-                     maxFileSize: 5 * 1024 * 1024 * 1024, // 5GB
+                     allowedFileTypes: ["image/jpeg", "image/png", "image/gif", "application/pdf"],
+                     maxFileSize: 300 * 1024 * 1024, // 300MB
                      bucketName: "uploads",
-                     uploadFolder: "test-uploads",
+                     uploadFolder: "secure-documents",
                      maxFiles: 5,
                   }}
                   onUploadComplete={handleUploadComplete}
@@ -123,7 +102,9 @@ export default function FileUploadPage() {
                               <div className="flex items-center gap-2">
                                  <span>{file.name}</span>
                                  <span className="text-xs text-gray-500">({(file.size / (1024 * 1024)).toFixed(2)} MB)</span>
-                                 <a href={file.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline">View</a>
+                                 <a href={file.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline">
+                                    View
+                                 </a>
                               </div>
                            </li>
                         ))}
