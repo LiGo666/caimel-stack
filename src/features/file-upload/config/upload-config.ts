@@ -1,10 +1,10 @@
-import { FileUploadConfig } from "../types";
+import { FileUploadConfig, FileType } from "../types";
 
 // Default configuration for file uploads
 export const defaultConfig: FileUploadConfig = {
   bucketName: "uploads",
   uploadFolder: "uploads",
-  maxFileSize: 5 * 1024 * 1024 * 1024, // 5GB
+  maxFileSize: 5 * 1024 * 1024, // 5MB
   allowedFileTypes: [
     "image/jpeg",
     "image/png",
@@ -15,8 +15,8 @@ export const defaultConfig: FileUploadConfig = {
     "video/mp4",
     "video/quicktime",
     "application/octet-stream",
-  ],
-  maxFiles: 5,
+  ] as FileType[],
+  maxFiles: 1,
 };
 
 // Helper function to merge custom config with defaults

@@ -1,7 +1,8 @@
 "use client"
 
-import { CustomFileUploader, type UploadedFile } from "@/features/file-upload/index.client"
+import { FileUploader, type UploadedFile } from "@/features/file-upload/index.client"
 import { exampleGetPresignedUrl } from "./(actions)/getPresignedUrl"
+import { FileType } from "@/features/file-upload/types"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Progress } from "@/features/shadcn/index.client"
 import { useState } from "react"
 
@@ -50,13 +51,18 @@ export default function FileUploadPage() {
                   </p>
                </div>
 
-               <CustomFileUploader
+               <FileUploader
                   // Custom server action for getting presigned URLs
                   customGetPresignedUrl={exampleGetPresignedUrl}
                   // These config options will be overridden by the server action
                   // They're only used for client-side validation
                   config={{
-                     allowedFileTypes: ["image/jpeg", "image/png", "image/gif", "application/pdf"],
+                     allowedFileTypes: [
+                        "image/jpeg",
+                        "image/png",
+                        "image/gif",
+                        "application/pdf"
+                     ] as FileType[],
                      maxFileSize: 300 * 1024 * 1024, // 300MB
                      bucketName: "uploads",
                      uploadFolder: "secure-documents",

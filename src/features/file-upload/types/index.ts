@@ -1,5 +1,20 @@
+/**
+ * Supported file types for uploads
+ * This provides intellisense for allowedFileTypes
+ */
+export type FileType = 
+  | "image/jpeg"
+  | "image/png"
+  | "image/gif"
+  | "application/pdf"
+  | "text/plain"
+  | "application/zip"
+  | "video/mp4"
+  | "video/quicktime"
+  | "application/octet-stream";
+
 export interface FileUploadConfig {
-  allowedFileTypes: string[];
+  allowedFileTypes: FileType[];
   maxFileSize: number; // in bytes
   maxFiles: number;
   uploadFolder: string;

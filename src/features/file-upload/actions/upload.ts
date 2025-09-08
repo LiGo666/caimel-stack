@@ -11,7 +11,8 @@ import {
   MultipartUploadCompleteRequest, 
   MultipartUploadCompleteResponse, 
   MultipartUploadInitResponse, 
-  MultipartUploadRequest 
+  MultipartUploadRequest,
+  FileType 
 } from "../types"
 import { 
   fileUploadRequestSchema, 
@@ -35,7 +36,8 @@ export async function getPresignedUrl(request: FileUploadRequest, customConfig?:
       const config = createUploadConfig(customConfig)
 
       // Validate file type
-      if (!config.allowedFileTypes.includes(validatedRequest.fileType)) {
+      const fileTypeValue = validatedRequest.fileType as FileType
+      if (!config.allowedFileTypes.includes(fileTypeValue)) {
          return { success: false, error: `File type not allowed. Allowed types: ${config.allowedFileTypes.join(", ")}` }
       }
 
@@ -125,7 +127,8 @@ export async function initMultipartUpload(request: MultipartUploadRequest, custo
       const config = createUploadConfig(customConfig)
 
       // Validate file type
-      if (!config.allowedFileTypes.includes(validatedRequest.fileType)) {
+      const fileTypeValue = validatedRequest.fileType as FileType
+      if (!config.allowedFileTypes.includes(fileTypeValue)) {
          return { success: false, error: `File type not allowed. Allowed types: ${config.allowedFileTypes.join(", ")}` }
       }
 
