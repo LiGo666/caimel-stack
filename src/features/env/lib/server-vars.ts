@@ -19,6 +19,11 @@ const NEXTAUTH_TRUST_HOST = z.coerce.boolean().optional().default(true).parse(pr
 const REDIS_HOSTNAME = z.string().min(1, "REDIS_HOSTNAME is required").parse(process.env.REDIS_HOSTNAME)
 const REDIS_PASSWORD = z.string().min(1, "REDIS_PASSWORD is required").parse(process.env.REDIS_PASSWORD)
 
+// MinIO configuration
+const MINIO_HOST = z.string().min(1, "MINIO_HOST is required").parse(process.env.MINIO_HOST)
+const MINIO_ACCESS_KEY = z.string().min(1, "MINIO_ACCESS_KEY is required").parse(process.env.MINIO_ACCESS_KEY)
+const MINIO_SECRET_KEY = z.string().min(1, "MINIO_SECRET_KEY is required").parse(process.env.MINIO_SECRET_KEY)
+
 // Secure API / Turnstile / Rate Limiting
 // Cloudflare Turnstile secret for server-side verification
 const TURNSTILE_SECRET_KEY = z.string().optional().default("").parse(process.env.TURNSTILE_SECRET_KEY)
@@ -62,6 +67,9 @@ export {
    NEXTAUTH_TRUST_HOST,
    REDIS_HOSTNAME,
    REDIS_PASSWORD,
+   MINIO_HOST,
+   MINIO_ACCESS_KEY,
+   MINIO_SECRET_KEY,
    TURNSTILE_SECRET_KEY,
    SECUREAPI_FAIL_MODE,
    SECUREAPI_TURNSTILE_TIMEOUT_MS,
@@ -73,5 +81,5 @@ export {
    POSTGRES_DATABASE_URL,
    isDev,
    isProd,
-   isTest
+   isTest,
 }

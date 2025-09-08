@@ -16,9 +16,11 @@ export * from "./components/ui/dropdown-menu"
 export * from "./components/ui/checkbox"
 export * from "./components/ui/table"
 export * from "./components/ui/sidebar"
-export * from "./components/ui/calendar"
 export * from "./components/ui/tooltip"
 export * from "./components/ui/switch"
+export * from "./components/ui/progress"
+export * from "./components/ui/alert"
+
 export * from "./components/ui/sheet"
 
 export { ThemeToggle } from "./components/ThemeToggle"
