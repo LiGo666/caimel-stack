@@ -20,6 +20,85 @@ model User {
   image            String?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
+  
+  // File upload sessions
+  uploadSessions   UploadSession[]
+}
+
+// File Upload Lifecycle Tracking
+enum FileStatus {
+  PENDING_UPLOAD    // Presigned URL generated, waiting for upload
+  UPLOADING        // Multipart upload in progress
+  UPLOADED         // File successfully uploaded to MinIO
+  PROCESSING       // File is being processed
+  COMPLETED        // All processing completed
+  FAILED           // Upload or processing failed
+  DELETED          // File was deleted
+}
+
+enum JobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum JobType {
+  TRANSCRIPTION
+  THUMBNAIL_GENERATION
+  VIRUS_SCAN
+  CONTENT_ANALYSIS
+  COMPRESSION
+}
+
+model UploadSession {
+  id            String   @id @default(cuid())
+  userId        String?  // Optional: link to user if authenticated
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  // MinIO reference - only store essential identifiers
+  objectKey     String   @unique // The object key in MinIO (contains all file info)
+  uploadId      String?  // For multipart uploads
+  
+  status        FileStatus @default(PENDING_UPLOAD)
+  uploadedAt    DateTime?
+  
+  // Processing jobs
+  jobs          ProcessingJob[]
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@map("upload_sessions")
+}
+
+model ProcessingJob {
+  id            String    @id @default(cuid())
+  uploadSession UploadSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sessionId     String
+  
+  type          JobType
+  status        JobStatus @default(PENDING)
+  priority      Int       @default(5) // 1 = highest, 10 = lowest
+  
+  // Job configuration and results
+  config        Json?     // Job-specific configuration
+  result        Json?     // Store job results
+  error         String?   // Error message if failed
+  
+  // Execution tracking
+  startedAt     DateTime?
+  completedAt   DateTime?
+  attempts      Int       @default(0)
+  maxAttempts   Int       @default(3)
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@map("processing_jobs")
+  @@index([status, priority, createdAt])
+  @@index([type, status])
 }
 
 model Path {

@@ -2,7 +2,7 @@ name: caimel-stack
 services:
    nextjs:
       build:
-         dockerfile: Dockerfile
+         dockerfile: docker/nextjs/Dockerfile
       restart: unless-stopped
       user: 1000:1000
       ports:
@@ -30,7 +30,7 @@ services:
          CLERK_SECRET_KEY: ${CLERK_SECRET_KEY}
          MINIO_HOST: ${MINIO_HOST}
          MINIO_ACCESS_KEY: ${RANDOM_USERNAME}
-         MINIO_SECRET_KEY: ${STRONG_PASSWORD}
+         MINIO_NOTIFY_WEBHOOK_AUTH_TOKEN_NEXTJS: ${STRONG_PASSWORD}
       volumes:
          - ./:/nextjs:rw
          - volume_nextjs_pnpm_store:/home/node/.pnpm-store:rw
@@ -47,6 +47,8 @@ services:
             condition: service_started
          redis-commander:
             condition: service_started
+      healthcheck:
+         test: ["CMD", "true"]
 
    redis:
       image: redis:latest
@@ -105,7 +107,9 @@ services:
          test: ["CMD", "true"]
 
    minio:
-      image: minio/minio:latest
+      build:
+         context: .
+         dockerfile: docker/minio/Dockerfile
       restart: unless-stopped
       ports:
          - "127.0.0.1:9001:9001"
@@ -114,13 +118,17 @@ services:
          MINIO_ROOT_PASSWORD: ${STRONG_PASSWORD}
          MINIO_BROWSER_REDIRECT_URL: http://localhost:9001
          MINIO_BROWSER_STRICT_UPLOAD_ENFORCEMENT: "off"
+         MINIO_NOTIFY_WEBHOOK_ENABLE_NEXTJS: "on"
+         MINIO_NOTIFY_WEBHOOK_ENDPOINT_NEXTJS: "http://nextjs:3000/api/minio-webhook"
+         MINIO_NOTIFY_WEBHOOK_AUTH_TOKEN_NEXTJS: ${STRONG_PASSWORD}
       volumes:
          - volume_minio_data:/data
-         - ./minio-config.json:/root/.minio/config.json:ro
-      command: server /data --console-address ":9001"
       networks:
          - caimel-stack
          - proxy
+      depends_on:
+         nextjs:
+            condition: service_started
       healthcheck:
          test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
          interval: 30s

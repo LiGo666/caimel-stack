@@ -1,5 +1,3 @@
-"use server"
-
 import { MinioClient } from "@/features/minio"
 import { createUploadConfig } from "../config/upload-config"
 import { FileUploadConfig, FileUploadRequest, FileUploadResponse, FileType } from "../types"
