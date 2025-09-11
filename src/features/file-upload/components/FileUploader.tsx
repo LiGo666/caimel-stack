@@ -2,12 +2,12 @@
 
 import React, { useState, useRef, useCallback, useEffect } from "react"
 import { FileUploadConfig, FileUploadResponse, UploadedFile, FileType } from "../types"
-import { useCustomUploadStrategy, UploadProgress } from "../hooks/useUploadStrategy"
+import { useFileUploadManager, FileUploadProgress } from "../hooks/useFileUpload"
 import { Alert, AlertDescription, AlertTitle, Button, Progress } from "@/features/shadcn/index.client"
 import { X, Upload, File, CheckCircle, AlertCircle, Loader2 } from "lucide-react"
 
 export interface FileUploaderProps {
-   customGetPresignedUrl: (fileName: string, fileType: string, fileSize: number) => Promise<FileUploadResponse>
+   getFileUploadUrl: (fileName: string, fileType: string, fileSize: number) => Promise<FileUploadResponse>
    config?: Partial<FileUploadConfig>
    onUploadComplete?: (files: UploadedFile[]) => void
    onUploadError?: (error: string) => void
@@ -24,13 +24,13 @@ export interface FileUploaderProps {
 interface FileUploadState {
    file: File
    status: "pending" | "uploading" | "completed" | "error"
-   progress: UploadProgress
+   progress: FileUploadProgress
    error?: string
    result?: UploadedFile
 }
 
 export function FileUploader({
-   customGetPresignedUrl,
+   getFileUploadUrl,
    config,
    onUploadComplete,
    onUploadError,
@@ -50,7 +50,7 @@ export function FileUploader({
 
    const fileInputRef = useRef<HTMLInputElement>(null)
    const dropzoneRef = useRef<HTMLDivElement>(null)
-   const { uploadFile, abortUpload, abortAllUploads } = useCustomUploadStrategy(customGetPresignedUrl)
+   const { executeFileUpload, cancelFileUpload, cancelAllFileUploads } = useFileUploadManager(getFileUploadUrl)
 
    // Get current files from state
    const currentFiles = Object.values(fileStates).map((state) => state.file)
@@ -137,7 +137,7 @@ export function FileUploader({
       (fileKey: string) => {
          const fileState = fileStates[fileKey]
          if (fileState?.status === "uploading") {
-            abortUpload(fileState.file.name)
+            cancelFileUpload(fileState.file.name)
          }
 
          setFileStates((prev) => {
@@ -146,7 +146,7 @@ export function FileUploader({
             return newState
          })
       },
-      [fileStates, abortUpload],
+      [fileStates, cancelFileUpload],
    )
 
    // Handle drag events
@@ -199,7 +199,7 @@ export function FileUploader({
                      // Update status to uploading
                      setFileStates((prev) => ({ ...prev, [fileKey]: { ...prev[fileKey], status: "uploading" } }))
 
-                     const result = await uploadFile(fileState.file, config, {
+                     const result = await executeFileUpload(fileState.file, config, {
                         onProgress: (progress) => {
                            setFileStates((prev) => ({ ...prev, [fileKey]: { ...prev[fileKey], progress } }))
                         },
@@ -244,11 +244,11 @@ export function FileUploader({
       } finally {
          setIsUploading(false)
       }
-   }, [pendingFiles, config, onUploadStart, onUploadComplete, onUploadError, uploadFile, fileStates])
+   }, [pendingFiles, config, onUploadStart, onUploadComplete, onUploadError, executeFileUpload, fileStates])
 
    // Cancel all uploads
    const cancelUploads = useCallback(() => {
-      abortAllUploads()
+      cancelAllFileUploads()
       setIsUploading(false)
 
       // Reset uploading files to pending
@@ -261,7 +261,7 @@ export function FileUploader({
          })
          return newState
       })
-   }, [abortAllUploads])
+   }, [cancelAllFileUploads])
 
    // Notify parent of progress updates
    useEffect(() => {

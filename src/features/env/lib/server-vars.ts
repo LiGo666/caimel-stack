@@ -23,7 +23,11 @@ const REDIS_PASSWORD = z.string().min(1, "REDIS_PASSWORD is required").parse(pro
 const MINIO_HOST = z.string().min(1, "MINIO_HOST is required").parse(process.env.MINIO_HOST)
 const MINIO_ACCESS_KEY = z.string().min(1, "MINIO_ACCESS_KEY is required").parse(process.env.MINIO_ACCESS_KEY)
 const MINIO_SECRET_KEY = z.string().min(1, "MINIO_SECRET_KEY is required").parse(process.env.MINIO_SECRET_KEY)
-const MINIO_NOTIFY_WEBHOOK_AUTH_TOKEN_NEXTJS = z.string().min(1, "MINIO_NOTIFY_WEBHOOK_AUTH_TOKEN_NEXTJS is required").parse(process.env.MINIO_NOTIFY_WEBHOOK_AUTH_TOKEN_NEXTJS)
+const MINIO_NOTIFY_WEBHOOK_AUTH_TOKEN_NEXTJS = z
+   .string()
+   .min(1, "MINIO_NOTIFY_WEBHOOK_AUTH_TOKEN_NEXTJS is required")
+   .parse(process.env.MINIO_NOTIFY_WEBHOOK_AUTH_TOKEN_NEXTJS)
+const MINIO_NOTIFY_WEBHOOK_ENDPOINT = z.string().min(1, "MINIO_NOTIFY_WEBHOOK_ENDPOINT is required").parse(process.env.MINIO_NOTIFY_WEBHOOK_ENDPOINT)
 
 // Secure API / Turnstile / Rate Limiting
 // Cloudflare Turnstile secret for server-side verification
@@ -72,6 +76,7 @@ export {
    MINIO_ACCESS_KEY,
    MINIO_SECRET_KEY,
    MINIO_NOTIFY_WEBHOOK_AUTH_TOKEN_NEXTJS,
+   MINIO_NOTIFY_WEBHOOK_ENDPOINT,
    TURNSTILE_SECRET_KEY,
    SECUREAPI_FAIL_MODE,
    SECUREAPI_TURNSTILE_TIMEOUT_MS,

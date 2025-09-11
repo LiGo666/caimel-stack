@@ -1,7 +1,7 @@
 "use client"
 
 import { FileUploader, type UploadedFile } from "@/features/file-upload/index.client"
-import { exampleGetPresignedUrl } from "./(actions)/getPresignedUrl"
+import { generateFileUploadUrlAction } from "./(actions)/generateFileUploadUrlAction"
 import { FileType } from "@/features/file-upload/types"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Progress } from "@/features/shadcn/index.client"
 import { useState } from "react"
@@ -53,7 +53,7 @@ export default function FileUploadPage() {
 
                <FileUploader
                   // Custom server action for getting presigned URLs
-                  customGetPresignedUrl={exampleGetPresignedUrl}
+                  getFileUploadUrl={generateFileUploadUrlAction}
                   // These config options will be overridden by the server action
                   // They're only used for client-side validation
                   config={{

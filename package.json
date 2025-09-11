@@ -8,7 +8,9 @@
       "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
       "format": "prettier --write .",
       "test": "jest",
-      "test:watch": "jest --watch",
+      "test:watch": "jest --watchAll",
+      "test:unit": "jest --testMatch='**/*.unit.test.ts'",
+      "test:int": "jest --testMatch='**/*.int.test.ts'",
       "i18n:check": "i18n-check -s en -l src/features/next-intl/messages",
       "prisma:generate": "prisma generate",
       "prisma:migrate": "prisma migrate dev",
@@ -97,6 +99,7 @@
       "three": "^0.179.1",
       "tw-animate-css": "^1.3.6",
       "typescript-eslint": "^8.40.0",
+      "uuid": "^13.0.0",
       "vaul": "^1.1.2",
       "zod": "^4.0.17"
    },

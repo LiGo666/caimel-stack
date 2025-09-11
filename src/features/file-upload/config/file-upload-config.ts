@@ -1,7 +1,7 @@
 import { FileUploadConfig, FileType } from "../types";
 
 // Default configuration for file uploads
-export const defaultConfig: FileUploadConfig = {
+export const defaultFileUploadConfig: FileUploadConfig = {
   bucketName: "uploads",
   uploadFolder: "uploads",
   maxFileSize: 5 * 1024 * 1024, // 5MB
@@ -20,9 +20,9 @@ export const defaultConfig: FileUploadConfig = {
 };
 
 // Helper function to merge custom config with defaults
-export function createUploadConfig(customConfig?: Partial<FileUploadConfig>): FileUploadConfig {
+export function createFileUploadConfig(customConfig?: Partial<FileUploadConfig>): FileUploadConfig {
   return {
-    ...defaultConfig,
+    ...defaultFileUploadConfig,
     ...customConfig,
   };
 }

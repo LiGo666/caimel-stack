@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { MinioWebhookPayload, FileUploadNotification } from "@/features/file-upload/types"
 import { MINIO_NOTIFY_WEBHOOK_AUTH_TOKEN_NEXTJS } from "@/features/env"
 import { z } from "zod"
-
+import { PrismaClient } from "@/repository/prisma"
+import { FileStatus } from "@/features/file-upload/types/database"
 // Webhook validation schema
 const webhookPayloadSchema = z.object({
    EventName: z.string(),
@@ -131,21 +132,61 @@ async function handleFileUploadEvent(notification: FileUploadNotification) {
  * Handle file creation events
  */
 async function handleFileCreated(notification: FileUploadNotification) {
-   // TODO: Add your business logic here
-   // Examples of what you might want to do:
-   // 1. Update database with file metadata
-   // 2. Send notifications to users
-   // 3. Trigger file processing (thumbnails, virus scanning, etc.)
-   // 4. Update file status in your application
-   // 5. Log the upload for analytics
-
    console.log(`File created: ${notification.fileName} (${notification.fileSize} bytes)`)
 
-   // Example: You could update a database record here
-   // await updateFileStatus(notification.objectKey, 'uploaded')
+   try {
+      // First, create or update the file record in the database
+      const fileRecord = await createOrUpdateFileRecord(notification)
 
-   // Example: You could trigger additional processing
-   // await processUploadedFile(notification)
+      // Trigger virus scanning via clamav-worker
+      const scanResult = await triggerVirusScan(notification)
+
+      if (scanResult.success) {
+         // Update the file record with scan results
+         await updateFileScanResults(notification.objectKey, scanResult.scan)
+
+         if (scanResult.scan.clean) {
+            console.log(`✅ File ${notification.fileName} is clean`)
+         } else {
+            console.error(`🦠 Virus detected in ${notification.fileName}: ${scanResult.scan.virus}`)
+
+            // Handle infected file (e.g., quarantine, delete, notify)
+            await handleInfectedFile(notification, scanResult.scan.virus)
+         }
+      } else {
+         console.error(`❌ Failed to scan ${notification.fileName}: ${scanResult.error}`)
+         // Update the file record with scan failure
+         await updateFileScanFailure(notification.objectKey, scanResult.error || "Unknown error")
+      }
+   } catch (error) {
+      console.error(`Error processing file ${notification.fileName}:`, error)
+   }
+}
+
+/**
+ * Trigger virus scan via clamav-worker service
+ */
+async function triggerVirusScan(
+   notification: FileUploadNotification,
+): Promise<{ success: boolean; scan?: { clean: boolean; virus: string | null }; error?: string }> {
+   try {
+      const response = await fetch("http://clamav-worker:8080/scan-file", {
+         method: "POST",
+         headers: { "Content-Type": "application/json", Authorization: `Bearer ${MINIO_NOTIFY_WEBHOOK_AUTH_TOKEN_NEXTJS}` },
+         body: JSON.stringify({ bucketName: notification.bucketName, objectKey: notification.objectKey, fileName: notification.fileName }),
+         signal: AbortSignal.timeout(120000), // 2 minute timeout for scanning
+      })
+
+      if (!response.ok) {
+         throw new Error(`ClamAV worker returned ${response.status}: ${response.statusText}`)
+      }
+
+      const result = await response.json()
+      return result
+   } catch (error) {
+      console.error("Error calling clamav-worker:", error)
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error occurred" }
+   }
 }
 
 /**

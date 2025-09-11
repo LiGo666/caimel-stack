@@ -30,7 +30,9 @@ services:
          CLERK_SECRET_KEY: ${CLERK_SECRET_KEY}
          MINIO_HOST: ${MINIO_HOST}
          MINIO_ACCESS_KEY: ${RANDOM_USERNAME}
+         MINIO_SECRET_KEY: ${STRONG_PASSWORD}
          MINIO_NOTIFY_WEBHOOK_AUTH_TOKEN_NEXTJS: ${STRONG_PASSWORD}
+         MINIO_NOTIFY_WEBHOOK_ENDPOINT: https://boilerplate-nextjs-3afb6505.christiangotthardt.de/api/minio-webhook
       volumes:
          - ./:/nextjs:rw
          - volume_nextjs_pnpm_store:/home/node/.pnpm-store:rw
@@ -106,21 +108,77 @@ services:
       healthcheck:
          test: ["CMD", "true"]
 
-   minio:
+   clamav:
+      image: clamav/clamav:latest
+      restart: unless-stopped
+      ports:
+         - "127.0.0.1:3310:3310"
+      environment:
+         # Enable TCP socket for external connections
+         CLAMD_CONF_TCPSocket: "3310"
+         CLAMD_CONF_TCPAddr: "0.0.0.0"
+         # Automatic virus definition updates
+         FRESHCLAM_CONF_Checks: "2"
+         FRESHCLAM_CONF_DatabaseMirror: "database.clamav.net"
+         # Logging
+         CLAMD_CONF_LogTime: "yes"
+         CLAMD_CONF_LogClean: "yes"
+         # Performance settings
+         CLAMD_CONF_MaxFileSize: "25M"
+         CLAMD_CONF_MaxScanSize: "100M"
+         CLAMD_CONF_StreamMaxLength: "25M"
+         CLAMD_CONF_MaxThreads: "4"
+      volumes:
+         - volume_clamav_db:/var/lib/clamav
+      networks:
+         - caimel-stack
+      healthcheck:
+         test: ["CMD", "true"]
+         interval: 10s
+         timeout: 5s
+         retries: 1
+         start_period: 10s
+
+   clamav-worker:
       build:
          context: .
-         dockerfile: docker/minio/Dockerfile
+         dockerfile: docker/clamav-worker/Dockerfile
+      restart: unless-stopped
+      ports:
+         - "127.0.0.1:8080:8080"
+      environment:
+         CLAMAV_HOST: "clamav"
+         CLAMAV_PORT: "3310"
+         POSTGRES_DATABASE_URL: postgres://${RANDOM_USERNAME}:${STRONG_PASSWORD}@postgres:5432/nextjs-db
+         MINIO_HOST: minio
+         MINIO_ACCESS_KEY: ${RANDOM_USERNAME}
+         MINIO_SECRET_KEY: ${STRONG_PASSWORD}
+         WEBHOOK_AUTH_TOKEN: ${STRONG_PASSWORD}
+      networks:
+         - caimel-stack
+      depends_on:
+         clamav:
+            condition: service_healthy
+         postgres:
+            condition: service_healthy
+      healthcheck:
+         test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+         interval: 30s
+         timeout: 10s
+         retries: 3
+
+   minio:
+      image: minio/minio:latest
       restart: unless-stopped
       ports:
          - "127.0.0.1:9001:9001"
       environment:
          MINIO_ROOT_USER: ${RANDOM_USERNAME}
          MINIO_ROOT_PASSWORD: ${STRONG_PASSWORD}
-         MINIO_BROWSER_REDIRECT_URL: http://localhost:9001
-         MINIO_BROWSER_STRICT_UPLOAD_ENFORCEMENT: "off"
          MINIO_NOTIFY_WEBHOOK_ENABLE_NEXTJS: "on"
          MINIO_NOTIFY_WEBHOOK_ENDPOINT_NEXTJS: "http://nextjs:3000/api/minio-webhook"
          MINIO_NOTIFY_WEBHOOK_AUTH_TOKEN_NEXTJS: ${STRONG_PASSWORD}
+      command: ["server", "/data", "--console-address", ":9001"]
       volumes:
          - volume_minio_data:/data
       networks:
@@ -128,6 +186,8 @@ services:
          - proxy
       depends_on:
          nextjs:
+            condition: service_started
+         clamav:
             condition: service_started
       healthcheck:
          test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
@@ -147,3 +207,4 @@ volumes:
    volume_postgres_db:
    volume_minio_data:
       external: true
+   volume_clamav_db:

@@ -2,34 +2,33 @@
 
 import { useCallback, useRef } from "react"
 import { FileUploadConfig, FileUploadResponse, UploadedFile } from "../types"
-import { getFileUrl } from "../actions/upload"
 
-export interface UploadProgress {
+export interface FileUploadProgress {
   loaded: number
   total: number
   percentage: number
   speed: number // KB/s
 }
 
-export interface UploadCallbacks {
-  onProgress?: (progress: UploadProgress) => void
+export interface FileUploadCallbacks {
+  onProgress?: (progress: FileUploadProgress) => void
   onComplete?: (file: UploadedFile) => void
   onError?: (error: Error) => void
 }
 
-type GetPresignedUrlFn = (fileName: string, fileType: string, fileSize: number) => Promise<FileUploadResponse>
+type GetFileUploadUrlFn = (fileName: string, fileType: string, fileSize: number) => Promise<FileUploadResponse>
 
-export function useCustomUploadStrategy(customGetPresignedUrl: GetPresignedUrlFn) {
+export function useFileUploadManager(getFileUploadUrl: GetFileUploadUrlFn) {
   const abortControllersRef = useRef<Record<string, AbortController>>({})
 
   // Direct upload for smaller files
-  const uploadDirect = useCallback(
-    async (file: File, config?: Partial<FileUploadConfig>, callbacks?: UploadCallbacks): Promise<UploadedFile> => {
+  const performDirectFileUpload = useCallback(
+    async (file: File, config?: Partial<FileUploadConfig>, callbacks?: FileUploadCallbacks): Promise<UploadedFile> => {
       console.log(`[CUSTOM_UPLOAD_STRATEGY] Starting direct upload for ${file.name} (${Math.round(file.size / 1024)}KB)`)
 
       try {
         // Get presigned URL using the custom function
-        const response = await customGetPresignedUrl(
+        const response = await getFileUploadUrl(
           file.name,
           file.type,
           file.size
@@ -81,29 +80,16 @@ export function useCustomUploadStrategy(customGetPresignedUrl: GetPresignedUrlFn
 
           xhr.onload = async () => {
             if (xhr.status >= 200 && xhr.status < 300) {
-              try {
-                // Use the existing getFileUrl function from the original upload.ts
-                const fileUrl = await getFileUrl(config?.bucketName || 'uploads', key)
-                const uploadedFile: UploadedFile = {
-                  key,
-                  name: file.name,
-                  size: file.size,
-                  type: file.type,
-                  url: fileUrl,
-                }
-                callbacks?.onComplete?.(uploadedFile)
-                resolve(uploadedFile)
-              } catch (urlError) {
-                const uploadedFile: UploadedFile = {
-                  key,
-                  name: file.name,
-                  size: file.size,
-                  type: file.type,
-                  url: `#uploaded-${key}`,
-                }
-                callbacks?.onComplete?.(uploadedFile)
-                resolve(uploadedFile)
+              // No need to generate download URL for client-side
+              const uploadedFile: UploadedFile = {
+                key,
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                url: `#uploaded-${key}`, // Just use a reference identifier
               }
+              callbacks?.onComplete?.(uploadedFile)
+              resolve(uploadedFile)
             } else {
               const error = new Error(`Upload failed with status ${xhr.status}: ${xhr.responseText || 'No response'}`)
               callbacks?.onError?.(error)
@@ -145,29 +131,29 @@ export function useCustomUploadStrategy(customGetPresignedUrl: GetPresignedUrlFn
         delete abortControllersRef.current[file.name]
       }
     },
-    [customGetPresignedUrl]
+    [getFileUploadUrl]
   )
 
   // For now, we'll only support direct upload with custom action
-  const uploadChunked = useCallback(
-    async (file: File, config?: Partial<FileUploadConfig>, callbacks?: UploadCallbacks): Promise<UploadedFile> => {
+  const performChunkedFileUpload = useCallback(
+    async (file: File, config?: Partial<FileUploadConfig>, callbacks?: FileUploadCallbacks): Promise<UploadedFile> => {
       console.log(`[CUSTOM_UPLOAD_STRATEGY] Chunked uploads not supported with custom action`)
       throw new Error("Chunked uploads not supported with custom action")
     },
-    [customGetPresignedUrl]
+    [getFileUploadUrl]
   )
 
   // Smart upload method selection - for custom action we only use direct upload
-  const uploadFile = useCallback(
-    async (file: File, config?: Partial<FileUploadConfig>, callbacks?: UploadCallbacks): Promise<UploadedFile> => {
+  const executeFileUpload = useCallback(
+    async (file: File, config?: Partial<FileUploadConfig>, callbacks?: FileUploadCallbacks): Promise<UploadedFile> => {
       console.log(`[CUSTOM_UPLOAD_STRATEGY] Using direct upload for all files with custom action`)
-      return uploadDirect(file, config, callbacks)
+      return performDirectFileUpload(file, config, callbacks)
     },
-    [uploadDirect]
+    [performDirectFileUpload]
   )
 
   // Abort upload
-  const abortUpload = useCallback((fileName: string) => {
+  const cancelFileUpload = useCallback((fileName: string) => {
     console.log(`[CUSTOM_UPLOAD_STRATEGY] Aborting upload for ${fileName}`)
     
     // Abort direct upload
@@ -179,7 +165,7 @@ export function useCustomUploadStrategy(customGetPresignedUrl: GetPresignedUrlFn
   }, [])
 
   // Abort all uploads
-  const abortAllUploads = useCallback(() => {
+  const cancelAllFileUploads = useCallback(() => {
     console.log(`[CUSTOM_UPLOAD_STRATEGY] Aborting all uploads`)
     Object.values(abortControllersRef.current).forEach(controller => {
       controller.abort()
@@ -188,10 +174,10 @@ export function useCustomUploadStrategy(customGetPresignedUrl: GetPresignedUrlFn
   }, [])
 
   return {
-    uploadFile,
-    uploadDirect,
-    uploadChunked,
-    abortUpload,
-    abortAllUploads,
+    executeFileUpload,
+    performDirectFileUpload,
+    performChunkedFileUpload,
+    cancelFileUpload,
+    cancelAllFileUploads,
   }
 }

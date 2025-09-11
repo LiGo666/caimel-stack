@@ -1,4 +1,4 @@
 import "server-only"
 
-export { generatePresignedUrl } from "./lib/presigned-url"
+export { generateFileUploadUrl } from "./lib/file-upload-generator"
 export type { FileUploadConfig } from "./types"

@@ -1,7 +1,7 @@
 export interface MinioConfig {
-  endpoint: string;
-  accessKey: string;
-  secretKey: string;
+   endpoint: string
+   accessKey: string
+   secretKey: string
 }
 
 export interface BucketConfig {
@@ -14,6 +14,7 @@ export interface PresignedUrlOptions {
    objectName: string
    expiry?: number // in seconds
    contentType?: string
+   maxSizeBytes?: number // Maximum allowed file size in bytes
 }
 
 export interface PresignedUrlResult {
@@ -69,3 +70,13 @@ export interface MultipartUploadCompletePart {
    partNumber: number
    etag: string
 }
+
+export interface NotificationOptions {
+   bucketName: string
+   endpoint: string
+   prefix?: string
+   suffix?: string
+   events?: string[]
+   authToken?: string
+}
+
