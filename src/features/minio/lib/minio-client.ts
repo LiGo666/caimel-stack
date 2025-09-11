@@ -106,7 +106,7 @@ export class MinioClient {
    async bucketNotificationExists(bucketName: string): Promise<boolean> {
       try {
          console.log(`[MinioClient] Checking if bucket notifications exist for: ${bucketName}`)
-         
+
          return await new Promise<boolean>((resolve, reject) => {
             this.client.getBucketNotification(bucketName, (err: any, notifications: any) => {
                if (err) {
@@ -115,17 +115,40 @@ export class MinioClient {
                   resolve(false)
                   return
                }
-               
-               // Check if there are any notification configurations
-               const hasNotifications = (
-                  (notifications.cloudFunctionConfiguration && Object.keys(notifications.cloudFunctionConfiguration).length > 0) ||
-                  (notifications.queueConfiguration && notifications.queueConfiguration.length > 0) ||
-                  (notifications.topicConfiguration && notifications.topicConfiguration.length > 0) ||
-                  (notifications.lambdaFunctionConfiguration && notifications.lambdaFunctionConfiguration.length > 0)
-               )
-               
+
+               // Debug: Output the full response
+               console.log(`[MinioClient] Full notification response for ${bucketName}:`, JSON.stringify(notifications, null, 2))
+
+               // Check if notifications is undefined or null
+               if (!notifications) {
+                  console.log(`[MinioClient] Bucket ${bucketName} has no notifications (undefined/null)`)
+                  resolve(false)
+                  return
+               }
+
+               // Check if the response is an empty object
+               if (typeof notifications === "object" && Object.keys(notifications).length === 0) {
+                  console.log(`[MinioClient] Bucket ${bucketName} has empty notification config (no notifications)`)
+                  resolve(false)
+                  return
+               }
+
+               // Check for notifications based on the actual response structure
+               const hasQueueConfig =
+                  notifications.QueueConfiguration && Array.isArray(notifications.QueueConfiguration) && notifications.QueueConfiguration.length > 0
+
+               const hasTopicConfig =
+                  notifications.TopicConfiguration && Array.isArray(notifications.TopicConfiguration) && notifications.TopicConfiguration.length > 0
+
+               const hasCloudFunctionConfig =
+                  notifications.CloudFunctionConfiguration &&
+                  Array.isArray(notifications.CloudFunctionConfiguration) &&
+                  notifications.CloudFunctionConfiguration.length > 0
+
+               const hasNotifications = Boolean(hasQueueConfig || hasTopicConfig || hasCloudFunctionConfig)
+
                console.log(`[MinioClient] Bucket ${bucketName} has notifications: ${hasNotifications}`)
-               resolve(hasNotifications || false) // Ensure we always return a boolean
+               resolve(hasNotifications)
             })
          })
       } catch (error) {
@@ -191,6 +214,95 @@ export class MinioClient {
          return true
       } catch (error) {
          console.error("Error setting bucket notification:", error)
+         return false
+      }
+   }
+
+   async removeBucketNotification(bucketName: string): Promise<boolean> {
+      try {
+         console.log(`[MinioClient] Removing bucket notifications for ${bucketName}`)
+
+         // Create an empty notification configuration
+         const emptyConfig = new NotificationConfig()
+
+         // Remove all notifications by setting an empty configuration
+         await new Promise<void>((resolve, reject) => {
+            this.client.setBucketNotification(bucketName, emptyConfig, (err: any) => {
+               if (err) {
+                  console.error(`[MinioClient] Error removing bucket notifications:`, err)
+                  reject(err)
+                  return
+               }
+               console.log(`[MinioClient] Successfully removed bucket notifications for ${bucketName}`)
+               resolve()
+            })
+         })
+
+         return true
+      } catch (error) {
+         console.error(`[MinioClient] Error removing bucket notifications:`, error)
+         return false
+      }
+   }
+
+   async deleteBucket(bucketName: string, force: boolean = false): Promise<boolean> {
+      try {
+         console.log(`[MinioClient] Deleting bucket: ${bucketName}${force ? " (force)" : ""}`)
+
+         // Check if bucket exists first
+         const exists = await this.bucketExists(bucketName)
+         if (!exists) {
+            console.log(`[MinioClient] Bucket ${bucketName} does not exist, nothing to delete`)
+            return true
+         }
+
+         // If force is true, remove all objects first
+         if (force) {
+            try {
+               console.log(`[MinioClient] Force option enabled, removing all objects from bucket ${bucketName}`)
+
+               // List all objects in the bucket
+               const objectsStream = this.client.listObjects(bucketName, "", true)
+               const objectsToDelete: string[] = []
+
+               // Collect all object names
+               await new Promise<void>((resolve, reject) => {
+                  objectsStream.on("data", (obj) => {
+                     if (obj.name) {
+                        objectsToDelete.push(obj.name)
+                     }
+                  })
+
+                  objectsStream.on("error", (err) => {
+                     console.error(`[MinioClient] Error listing objects in bucket ${bucketName}:`, err)
+                     reject(err)
+                  })
+
+                  objectsStream.on("end", () => {
+                     resolve()
+                  })
+               })
+
+               // Delete all objects
+               if (objectsToDelete.length > 0) {
+                  console.log(`[MinioClient] Removing ${objectsToDelete.length} objects from bucket ${bucketName}`)
+                  await this.client.removeObjects(bucketName, objectsToDelete)
+               } else {
+                  console.log(`[MinioClient] No objects to delete in bucket ${bucketName}`)
+               }
+            } catch (emptyError) {
+               console.error(`[MinioClient] Error emptying bucket ${bucketName}:`, emptyError)
+               // Continue with deletion attempt even if emptying fails
+            }
+         }
+
+         // Delete the bucket
+         await this.client.removeBucket(bucketName)
+         console.log(`[MinioClient] Successfully deleted bucket ${bucketName}`)
+
+         return true
+      } catch (error) {
+         console.error(`[MinioClient] Error deleting bucket:`, error)
          return false
       }
    }

@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from "next/server"
 import { MinioWebhookPayload, FileUploadNotification } from "@/features/file-upload/types"
 import { MINIO_NOTIFY_WEBHOOK_AUTH_TOKEN_NEXTJS } from "@/features/env"
 import { z } from "zod"
-import { PrismaClient } from "@/repository/prisma"
-import { FileStatus } from "@/features/file-upload/types/database"
+import { UploadSessionRepository } from "@/features/file-upload/lib/file-upload-session-manager"
+import { FileStatus, JobType } from "@/features/file-upload/types/database"
+
+// Initialize repositories
+const uploadSessionRepository = new UploadSessionRepository()
+
 // Webhook validation schema
 const webhookPayloadSchema = z.object({
    EventName: z.string(),
@@ -135,57 +139,30 @@ async function handleFileCreated(notification: FileUploadNotification) {
    console.log(`File created: ${notification.fileName} (${notification.fileSize} bytes)`)
 
    try {
-      // First, create or update the file record in the database
-      const fileRecord = await createOrUpdateFileRecord(notification)
+      // Find existing upload session by object key
+      const existingSession = await uploadSessionRepository.findByObjectKey(notification.objectKey)
 
-      // Trigger virus scanning via clamav-worker
-      const scanResult = await triggerVirusScan(notification)
-
-      if (scanResult.success) {
-         // Update the file record with scan results
-         await updateFileScanResults(notification.objectKey, scanResult.scan)
-
-         if (scanResult.scan.clean) {
-            console.log(`✅ File ${notification.fileName} is clean`)
-         } else {
-            console.error(`🦠 Virus detected in ${notification.fileName}: ${scanResult.scan.virus}`)
-
-            // Handle infected file (e.g., quarantine, delete, notify)
-            await handleInfectedFile(notification, scanResult.scan.virus)
-         }
+      if (existingSession) {
+         // Update existing session to mark as UPLOADED
+         console.log(`Updating existing upload session for ${notification.objectKey}`)
+         await uploadSessionRepository.updateStatusByObjectKey(
+            notification.objectKey, 
+            FileStatus.UPLOADED, 
+            new Date()
+         )
       } else {
-         console.error(`❌ Failed to scan ${notification.fileName}: ${scanResult.error}`)
-         // Update the file record with scan failure
-         await updateFileScanFailure(notification.objectKey, scanResult.error || "Unknown error")
+         // This is an unexpected upload (not initiated through our system)
+         // Create a new upload session record
+         console.log(`Creating new upload session for unexpected upload: ${notification.objectKey}`)
+         await uploadSessionRepository.create({
+            objectKey: notification.objectKey,
+         })
       }
+
+      // Process any pending jobs for this upload
+      await processUploadJobs(notification)
    } catch (error) {
       console.error(`Error processing file ${notification.fileName}:`, error)
-   }
-}
-
-/**
- * Trigger virus scan via clamav-worker service
- */
-async function triggerVirusScan(
-   notification: FileUploadNotification,
-): Promise<{ success: boolean; scan?: { clean: boolean; virus: string | null }; error?: string }> {
-   try {
-      const response = await fetch("http://clamav-worker:8080/scan-file", {
-         method: "POST",
-         headers: { "Content-Type": "application/json", Authorization: `Bearer ${MINIO_NOTIFY_WEBHOOK_AUTH_TOKEN_NEXTJS}` },
-         body: JSON.stringify({ bucketName: notification.bucketName, objectKey: notification.objectKey, fileName: notification.fileName }),
-         signal: AbortSignal.timeout(120000), // 2 minute timeout for scanning
-      })
-
-      if (!response.ok) {
-         throw new Error(`ClamAV worker returned ${response.status}: ${response.statusText}`)
-      }
-
-      const result = await response.json()
-      return result
-   } catch (error) {
-      console.error("Error calling clamav-worker:", error)
-      return { success: false, error: error instanceof Error ? error.message : "Unknown error occurred" }
    }
 }
 
@@ -193,14 +170,61 @@ async function triggerVirusScan(
  * Handle file deletion events
  */
 async function handleFileDeleted(notification: FileUploadNotification) {
-   // TODO: Add your business logic here
-   // Examples:
-   // 1. Update database to mark file as deleted
-   // 2. Clean up related resources
-   // 3. Send notifications
-
    console.log(`File deleted: ${notification.fileName}`)
 
-   // Example: You could clean up database records here
-   // await removeFileRecord(notification.objectKey)
+   // Update database to mark file as deleted
+   try {
+      await uploadSessionRepository.updateStatusByObjectKey(
+         notification.objectKey,
+         FileStatus.DELETED
+      )
+      console.log(`Marked ${notification.objectKey} as deleted in database`)
+   } catch (error) {
+      console.error(`Failed to update database for deleted file ${notification.objectKey}:`, error)
+   }
+}
+
+/**
+ * Process any pending jobs for an uploaded file
+ */
+async function processUploadJobs(notification: FileUploadNotification) {
+   try {
+      // Find the upload session
+      const session = await uploadSessionRepository.findByObjectKey(notification.objectKey)
+      
+      if (!session) {
+         console.error(`No upload session found for ${notification.objectKey}`)
+         return
+      }
+      
+      // Update status to PROCESSING
+      await uploadSessionRepository.updateStatusByObjectKey(
+         notification.objectKey,
+         FileStatus.PROCESSING
+      )
+      
+      // Here you would trigger any processing jobs based on file type
+      // For example, if it's an image, you might want to generate thumbnails
+      // If it's a document, you might want to extract text, etc.
+      
+      // For now, we'll just mark it as COMPLETED since we don't have any processing to do
+      await uploadSessionRepository.updateStatusByObjectKey(
+         notification.objectKey,
+         FileStatus.COMPLETED
+      )
+      
+      console.log(`File ${notification.fileName} processed successfully`)
+   } catch (error) {
+      console.error(`Error processing jobs for ${notification.objectKey}:`, error)
+      
+      // Mark as failed if there was an error
+      try {
+         await uploadSessionRepository.updateStatusByObjectKey(
+            notification.objectKey,
+            FileStatus.FAILED
+         )
+      } catch (updateError) {
+         console.error(`Failed to update status to FAILED for ${notification.objectKey}:`, updateError)
+      }
+   }
 }

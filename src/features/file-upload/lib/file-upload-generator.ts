@@ -5,6 +5,8 @@ import { fileUploadRequestSchema } from "../schema/upload.schema"
 import { randomUUID } from "crypto"
 import path from "path"
 import { MINIO_NOTIFY_WEBHOOK_ENDPOINT, MINIO_NOTIFY_WEBHOOK_AUTH_TOKEN_NEXTJS } from "@/features/env"
+import { UploadSessionRepository } from "./file-upload-session-manager"
+import { FileStatus } from "../types/database"
 
 /**
  * Server-only function to generate a presigned URL for file upload
@@ -95,6 +97,17 @@ export async function generateFileUploadUrl(request: FileUploadRequest, customCo
             throw error
          }
       }
+      // Initialize the upload session repository
+      const uploadSessionRepo = new UploadSessionRepository()
+      
+      // Create an entry in the database to track this upload
+      const uploadSession = await uploadSessionRepo.create({
+         objectKey: objectName,
+         userId: config.userId, // This will be undefined if not provided in customConfig
+      })
+      
+      console.log(`Created upload session in database with ID: ${uploadSession.id} for object: ${objectName}`)
+      
       // Generate presigned URL
       const presignedUrl = await minioClient.generatePresignedUrl({
          bucketName: config.bucketName,
@@ -103,7 +116,11 @@ export async function generateFileUploadUrl(request: FileUploadRequest, customCo
          maxSizeBytes: config.maxFileSize, // Pass the maxFileSize from config
       })
 
-      return { success: true, presignedUrl }
+      return { 
+         success: true, 
+         presignedUrl,
+         sessionId: uploadSession.id // Return the session ID so client can track it
+      }
    } catch (error) {
       console.error("Error generating presigned URL:", error)
       return { success: false, error: error instanceof Error ? error.message : "Unknown error occurred" }

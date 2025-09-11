@@ -64,6 +64,13 @@ export class UploadSessionRepository {
    }
 
    /**
+    * Get all sessions (most recent first)
+    */
+   async findAll(limit = 100): Promise<UploadSession[]> {
+      return await prisma.uploadSession.findMany({ include: { jobs: true }, orderBy: { createdAt: "desc" }, take: limit })
+   }
+
+   /**
     * Clean up old failed or completed sessions
     */
    async cleanupOldSessions(olderThanDays = 30): Promise<number> {

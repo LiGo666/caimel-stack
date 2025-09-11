@@ -35,76 +35,128 @@ describe("MinioClient Integration Tests", () => {
          fs.unlinkSync(tempFilePath)
       }
 
-      // Note: We're intentionally not deleting the test bucket here
-      // so you can manually verify it if needed. In a CI environment,
-      // you might want to add code to delete the bucket and all objects.
-   })
-
-   it("should check if a bucket exists (expecting false for new unique name)", async () => {
-      const exists = await minioClient.bucketExists(testBucketName)
-      expect(exists).toBe(false)
-   })
-
-   it("should create a new bucket", async () => {
-      const result = await minioClient.createBucket({ name: testBucketName })
-      expect(result).toBe(true)
-
-      // Verify the bucket was created
-      const exists = await minioClient.bucketExists(testBucketName)
-      expect(exists).toBe(true)
-   })
-
-   it("should generate a presigned URL and successfully upload a file", async () => {
-      // Generate a presigned URL for uploading
-      const presignedResult = await minioClient.generatePresignedUrl({
-         bucketName: testBucketName,
-         objectName: testObjectName,
-         contentType: "text/plain",
-      })
-
-      expect(presignedResult.url).toBeTruthy()
-      expect(presignedResult.fields).toBeTruthy()
-
-      // Use the presigned URL to upload the file
-      const formData = new FormData()
-
-      // Add all the fields from the presigned URL
-      Object.entries(presignedResult.fields || {}).forEach(([key, value]) => {
-         formData.append(key, value)
-      })
-
-      // Add the file content
-      const fileContent = fs.readFileSync(tempFilePath)
-      formData.append("file", new Blob([fileContent], { type: "text/plain" }))
-
-      // Upload using the presigned URL
+      // Clean up any buckets that might have been left over from failed tests
       try {
-         const response = await axios.post(presignedResult.url, formData, { headers: { "Content-Type": "multipart/form-data" } })
-
-         expect(response.status).toBe(204)
-         console.log("File uploaded successfully")
+         const exists = await minioClient.bucketExists(testBucketName)
+         if (exists) {
+            // Remove notifications first
+            await minioClient.removeBucketNotification(testBucketName)
+            // Then delete the bucket with force option
+            await minioClient.deleteBucket(testBucketName, true)
+         }
       } catch (error) {
-         console.error("Error uploading file:", error)
-         throw error
+         console.error(`Error cleaning up test bucket: ${error}`)
       }
    })
 
-   it("should check if bucket notifications exist", async () => {
-      // First check that no notifications exist yet
-      const notificationsExistBefore = await minioClient.bucketNotificationExists(testBucketName)
-      expect(notificationsExistBefore).toBe(false)
-
-      // Set up notifications
-      const result = await minioClient.setBucketNotification({
-         bucketName: testBucketName,
-         endpoint: "https://webhook.site/your-test-id",
-         prefix: "test-",
-         suffix: ".txt",
+   // Complete bucket and notification lifecycle test
+   describe("Bucket and notification lifecycle", () => {
+      it("should check if a bucket exists (expecting false for new unique name)", async () => {
+         const exists = await minioClient.bucketExists(testBucketName)
+         expect(exists).toBe(false)
       })
-      expect(result).toBe(true)
 
-      // Now check that notifications exist
-      const notificationsExistAfter = await minioClient.bucketNotificationExists(testBucketName)
-      expect(notificationsExistAfter).toBe(true)
+      it("should create a new bucket", async () => {
+         const result = await minioClient.createBucket({ name: testBucketName })
+         expect(result).toBe(true)
+
+         // Verify the bucket was created
+         const exists = await minioClient.bucketExists(testBucketName)
+         expect(exists).toBe(true)
+      })
+
+      it("should check that bucket notifications don't exist initially", async () => {
+         const notificationsExist = await minioClient.bucketNotificationExists(testBucketName)
+         expect(notificationsExist).toBe(false)
+      })
+
+      it("should set up bucket notifications", async () => {
+         const result = await minioClient.setBucketNotification({
+            bucketName: testBucketName,
+            endpoint: "https://webhook.site/your-test-id",
+            prefix: "test-",
+            suffix: ".txt",
+         })
+         expect(result).toBe(true)
+      })
+
+      it("should verify bucket notifications exist after creation", async () => {
+         // Add a small delay to allow the notification to be set up
+         await new Promise((resolve) => setTimeout(resolve, 1000))
+
+         // Check if notifications exist
+         const notificationsExist = await minioClient.bucketNotificationExists(testBucketName)
+         expect(notificationsExist).toBe(true)
+      })
+
+      it("should verify bucket exists after notification setup", async () => {
+         const exists = await minioClient.bucketExists(testBucketName)
+         expect(exists).toBe(true)
+      })
+
+      it("should generate a presigned URL and successfully upload a file", async () => {
+         // Generate a presigned URL for uploading
+         const presignedResult = await minioClient.generatePresignedUrl({
+            bucketName: testBucketName,
+            objectName: testObjectName,
+            contentType: "text/plain",
+         })
+
+         expect(presignedResult.url).toBeTruthy()
+         expect(presignedResult.fields).toBeTruthy()
+
+         // Use the presigned URL to upload the file
+         const formData = new FormData()
+
+         // Add all the fields from the presigned URL
+         Object.entries(presignedResult.fields || {}).forEach(([key, value]) => {
+            formData.append(key, value)
+         })
+
+         // Add the file content
+         const fileContent = fs.readFileSync(tempFilePath)
+         formData.append("file", new Blob([fileContent], { type: "text/plain" }))
+
+         // Upload using the presigned URL
+         try {
+            const response = await axios.post(presignedResult.url, formData, { headers: { "Content-Type": "multipart/form-data" } })
+
+            expect(response.status).toBe(204)
+            console.log("File uploaded successfully")
+         } catch (error) {
+            console.error("Error uploading file:", error)
+            throw error
+         }
+      })
+
+      it("should remove bucket notifications", async () => {
+         const result = await minioClient.removeBucketNotification(testBucketName)
+         expect(result).toBe(true)
+      })
+
+      it("should verify bucket notifications do not exist after removal", async () => {
+         // Add a small delay to allow the notification to be removed
+         await new Promise((resolve) => setTimeout(resolve, 1000))
+
+         // Check if notifications exist
+         const notificationsExist = await minioClient.bucketNotificationExists(testBucketName)
+         expect(notificationsExist).toBe(false)
+      })
+
+      it("should verify bucket exists after notification removal", async () => {
+         const exists = await minioClient.bucketExists(testBucketName)
+         expect(exists).toBe(true)
+      })
+
+      it("should delete the bucket with force option", async () => {
+         const result = await minioClient.deleteBucket(testBucketName, true)
+         expect(result).toBe(true)
+      })
+
+      it("should verify bucket does not exist after deletion", async () => {
+         // Check if bucket exists
+         const exists = await minioClient.bucketExists(testBucketName)
+         expect(exists).toBe(false)
+      })
    })
 })

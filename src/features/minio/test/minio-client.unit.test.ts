@@ -12,6 +12,7 @@ jest.mock("minio", () => {
 
    const mockBucketExists = jest.fn()
    const mockMakeBucket = jest.fn()
+   const mockRemoveBucket = jest.fn()
    const mockSetBucketNotification = jest.fn()
    const mockGetBucketNotification = jest.fn()
    const mockNewPostPolicy = jest
@@ -30,6 +31,7 @@ jest.mock("minio", () => {
          .mockImplementation(() => ({
             bucketExists: mockBucketExists,
             makeBucket: mockMakeBucket,
+            removeBucket: mockRemoveBucket,
             presignedPostPolicy: mockPresignedPostPolicy,
             newPostPolicy: mockNewPostPolicy,
             setBucketNotification: mockSetBucketNotification,
@@ -164,7 +166,7 @@ describe("MinioClient", () => {
 
       it("should return false when an error occurs", async () => {
          const bucketConfig: BucketConfig = { name: "test-bucket" }
-         
+
          // Setup the mock to throw an error
          const mockClient = jest.mocked(Client).mock.results[0].value
          // We need to mock bucketExists to return false so that makeBucket gets called
@@ -173,7 +175,7 @@ describe("MinioClient", () => {
          mockClient.makeBucket.mockRejectedValueOnce(new Error("Connection error"))
 
          const result = await minioClient.createBucket(bucketConfig)
-         
+
          expect(result).toBe(false)
          expect(mockConsoleError).toHaveBeenCalled()
       })
@@ -257,9 +259,7 @@ describe("MinioClient", () => {
 
          // Setup the mock to call the callback with notifications
          mockClient.getBucketNotification.mockImplementationOnce((bucket, callback) => {
-            callback(null, {
-               queueConfiguration: [{ events: ["s3:ObjectCreated:*"] }]
-            })
+            callback(null, { QueueConfiguration: [{ events: ["s3:ObjectCreated:*"] }] })
             return Promise.resolve()
          })
 
@@ -274,9 +274,22 @@ describe("MinioClient", () => {
 
          // Setup the mock to call the callback with notifications
          mockClient.getBucketNotification.mockImplementationOnce((bucket, callback) => {
-            callback(null, {
-               cloudFunctionConfiguration: { events: ["s3:ObjectCreated:*"] }
-            })
+            callback(null, { CloudFunctionConfiguration: [{ events: ["s3:ObjectCreated:*"] }] })
+            return Promise.resolve()
+         })
+
+         const result = await minioClient.bucketNotificationExists("test-bucket")
+
+         expect(result).toBe(true)
+         expect(mockClient.getBucketNotification).toHaveBeenCalledWith("test-bucket", expect.any(Function))
+      })
+
+      it("should return true when bucket has topic notifications", async () => {
+         const mockClient = jest.mocked(Client).mock.results[0].value
+
+         // Setup the mock to call the callback with notifications
+         mockClient.getBucketNotification.mockImplementationOnce((bucket, callback) => {
+            callback(null, { TopicConfiguration: [{ events: ["s3:ObjectCreated:*"] }] })
             return Promise.resolve()
          })
 
@@ -291,7 +304,7 @@ describe("MinioClient", () => {
 
          // Setup the mock to call the callback with empty notifications
          mockClient.getBucketNotification.mockImplementationOnce((bucket, callback) => {
-            callback(null, {})
+            callback(null, { QueueConfiguration: [], TopicConfiguration: [], CloudFunctionConfiguration: [] })
             return Promise.resolve()
          })
 
@@ -391,6 +404,80 @@ describe("MinioClient", () => {
          })
 
          const result = await minioClient.setBucketNotification(notificationOptions)
+
+         expect(result).toBe(false)
+         expect(mockConsoleError).toHaveBeenCalled()
+      })
+   })
+
+   describe("removeBucketNotification", () => {
+      it("should remove bucket notifications successfully", async () => {
+         const mockClient = jest.mocked(Client).mock.results[0].value
+
+         // Setup the mock to call the callback with no error
+         mockClient.setBucketNotification.mockImplementationOnce((bucket, config, callback) => {
+            callback(null)
+            return Promise.resolve()
+         })
+
+         const result = await minioClient.removeBucketNotification("test-bucket")
+
+         expect(result).toBe(true)
+         expect(mockClient.setBucketNotification).toHaveBeenCalledWith("test-bucket", expect.any(Object), expect.any(Function))
+      })
+
+      it("should return false when an error occurs", async () => {
+         const mockClient = jest.mocked(Client).mock.results[0].value
+
+         // Setup the mock to call the callback with an error
+         mockClient.setBucketNotification.mockImplementationOnce((bucket, config, callback) => {
+            callback(new Error("Failed to remove notifications"))
+            return Promise.resolve()
+         })
+
+         const result = await minioClient.removeBucketNotification("test-bucket")
+
+         expect(result).toBe(false)
+         expect(mockConsoleError).toHaveBeenCalled()
+      })
+   })
+
+   describe("deleteBucket", () => {
+      it("should delete a bucket that exists", async () => {
+         const mockClient = jest.mocked(Client).mock.results[0].value
+
+         // Setup the mock to return true (bucket exists)
+         mockClient.bucketExists.mockResolvedValueOnce(true)
+         mockClient.removeBucket.mockResolvedValueOnce(undefined)
+
+         const result = await minioClient.deleteBucket("test-bucket")
+
+         expect(result).toBe(true)
+         expect(mockClient.bucketExists).toHaveBeenCalledWith("test-bucket")
+         expect(mockClient.removeBucket).toHaveBeenCalledWith("test-bucket")
+      })
+
+      it("should return true when bucket does not exist (nothing to delete)", async () => {
+         const mockClient = jest.mocked(Client).mock.results[0].value
+
+         // Setup the mock to return false (bucket doesn't exist)
+         mockClient.bucketExists.mockResolvedValueOnce(false)
+
+         const result = await minioClient.deleteBucket("test-bucket")
+
+         expect(result).toBe(true)
+         expect(mockClient.bucketExists).toHaveBeenCalledWith("test-bucket")
+         expect(mockClient.removeBucket).not.toHaveBeenCalled()
+      })
+
+      it("should return false when an error occurs", async () => {
+         const mockClient = jest.mocked(Client).mock.results[0].value
+
+         // Setup the mock to return true (bucket exists) but fail on delete
+         mockClient.bucketExists.mockResolvedValueOnce(true)
+         mockClient.removeBucket.mockRejectedValueOnce(new Error("Failed to delete bucket"))
+
+         const result = await minioClient.deleteBucket("test-bucket")
 
          expect(result).toBe(false)
          expect(mockConsoleError).toHaveBeenCalled()

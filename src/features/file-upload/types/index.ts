@@ -20,6 +20,7 @@ export interface FileUploadConfig {
    maxFiles: number
    uploadFolder: string
    bucketName: string
+   userId?: string // Optional user ID for tracking uploads
 }
 
 export interface PresignedUrlResponse {
@@ -38,6 +39,7 @@ export interface FileUploadResponse {
    success: boolean
    presignedUrl?: PresignedUrlResponse
    error?: string
+   sessionId?: string // Database ID of the created upload session
 }
 
 export interface UploadedFile {

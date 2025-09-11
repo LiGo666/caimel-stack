@@ -57,8 +57,8 @@ export default function FileUploadPage() {
                   // These config options will be overridden by the server action
                   // They're only used for client-side validation
                   config={{
-                     allowedFileTypes: ["audio/mpeg"],
-                     maxFileSize: 300 * 1024 * 1024, // 300MB
+                     allowedFileTypes: ["audio/mpeg", "application/zip"],
+                     maxFileSize: 5000 * 1024 * 1024, // 5000MB
                      maxFiles: 1,
                   }}
                   onUploadComplete={handleUploadComplete}
