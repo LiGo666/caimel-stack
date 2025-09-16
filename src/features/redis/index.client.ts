@@ -1,1 +1,1 @@
-export { RedisCrud } from "./components/RedisCrud"
+export { RedisCrud } from "./components/RedisCrud";

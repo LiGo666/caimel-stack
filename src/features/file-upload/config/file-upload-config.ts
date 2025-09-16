@@ -1,4 +1,4 @@
-import { FileUploadConfig, FileType } from "../types";
+import type { FileType, FileUploadConfig } from "../types";
 
 // Default configuration for file uploads
 export const defaultFileUploadConfig: FileUploadConfig = {
@@ -20,7 +20,9 @@ export const defaultFileUploadConfig: FileUploadConfig = {
 };
 
 // Helper function to merge custom config with defaults
-export function createFileUploadConfig(customConfig?: Partial<FileUploadConfig>): FileUploadConfig {
+export function createFileUploadConfig(
+  customConfig?: Partial<FileUploadConfig>
+): FileUploadConfig {
   return {
     ...defaultFileUploadConfig,
     ...customConfig,

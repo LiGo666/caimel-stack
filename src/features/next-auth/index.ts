@@ -1,3 +1,4 @@
-import "server-only"
-export * from "./lib/authOptions"
-export * from "./config/credentials"
+import "server-only";
+
+export * from "./config/credentials";
+export * from "./lib/authOptions";

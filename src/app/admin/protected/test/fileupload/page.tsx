@@ -1,117 +1,160 @@
-"use client"
+"use client";
 
-import { FileUploader, type UploadedFile } from "@/features/file-upload/index.client"
-import { generateFileUploadUrlAction } from "./(actions)/generateFileUploadUrlAction"
-import { FileType } from "@/features/file-upload/types"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Progress } from "@/features/shadcn/index.client"
-import { useState } from "react"
+import { useState } from "react";
+import { EnhancedFileUploader } from "@/features/file-upload/components/EnhancedFileUploader";
+import { EnhancedFileUploadManager } from "@/features/file-upload/components/EnhancedFileUploadManager";
+import type { UploadedFile } from "@/features/file-upload/types";
+import { Badge } from "@/features/shadcn/components/ui/badge";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/features/shadcn/components/ui/tabs";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/features/shadcn/index.client";
+
+// File size constants in MB
+const MAX_FILE_SIZE_MB = 5000; // 5GB
 
 export default function FileUploadPage() {
-   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
-   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({})
-   const [uploadSpeeds, setUploadSpeeds] = useState<Record<string, number>>({})
-   const [uploading, setUploading] = useState(false)
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [uploadError, setUploadError] = useState<string>("");
 
-   const handleUploadComplete = (files: UploadedFile[]) => {
-      setUploadedFiles((prev) => [...prev, ...files])
-      setUploading(false)
-      console.log("Files uploaded:", files)
-   }
+  const handleFilesUploaded = (files: UploadedFile[]) => {
+    setUploadedFiles((prev) => [...prev, ...files]);
+    setUploadError("");
+  };
 
-   const handleUploadError = (error: string) => {
-      console.error("Upload error:", error)
-      setUploading(false)
-   }
+  const handleUploadError = (error: string) => {
+    setUploadError(error);
+  };
 
-   const handleUploadProgress = (progress: Record<string, number>, speeds: Record<string, number>) => {
-      // Use setTimeout to avoid the setState during render issue
-      setTimeout(() => {
-         setUploadProgress(progress)
-         setUploadSpeeds(speeds)
-      }, 0)
-   }
-
-   const handleUploadStart = () => {
-      setUploading(true)
-      setUploadProgress({})
-   }
-
-   return (
-      <div className="container mx-auto py-8">
-         <Card className="max-w-3xl mx-auto">
-            <CardHeader>
-               <CardTitle>File Upload Test</CardTitle>
-               <CardDescription>Test the file upload feature with MinIO pre-signed URLs</CardDescription>
-            </CardHeader>
-            <CardContent>
-               <div className="mb-4">
-                  <p className="text-sm text-gray-500">
-                     Smart file uploader with automatic method selection. Files ≤50MB use direct upload, while larger files automatically use chunked
-                     upload for better reliability.
-                  </p>
-               </div>
-
-               <FileUploader
-                  // Custom server action for getting presigned URLs
-                  getFileUploadUrl={generateFileUploadUrlAction}
-                  // These config options will be overridden by the server action
-                  // They're only used for client-side validation
-                  config={{
-                     allowedFileTypes: ["audio/mpeg", "application/zip"],
-                     maxFileSize: 5000 * 1024 * 1024, // 5000MB
-                     maxFiles: 1,
-                  }}
-                  onUploadComplete={handleUploadComplete}
-                  onUploadError={handleUploadError}
-                  onUploadProgress={handleUploadProgress}
-                  onUploadStart={handleUploadStart}
-                  multiple={true}
-                  buttonText="Select Files to Upload"
-                  dropzoneText="or drop files here (any size)"
-                  showProgressDetails={true}
-               />
-
-               {/* Upload Progress Display */}
-               {uploading && Object.keys(uploadProgress).length > 0 && (
-                  <div className="mt-6">
-                     <h3 className="text-lg font-medium mb-2">Upload Progress</h3>
-                     <div className="space-y-3">
-                        {Object.entries(uploadProgress).map(([fileName, progress]) => (
-                           <div key={fileName} className="mb-2">
-                              <div className="flex justify-between text-sm mb-1">
-                                 <span className="truncate max-w-[60%]">{fileName}</span>
-                                 <span>
-                                    {progress}% • {uploadSpeeds[fileName] || 0} KB/s
-                                 </span>
-                              </div>
-                              <Progress value={progress} className="h-2" />
-                              <div className="text-xs text-gray-500 mt-1">{progress === 100 ? "Processing..." : "Uploading..."}</div>
-                           </div>
-                        ))}
-                     </div>
-                  </div>
-               )}
-
-               {uploadedFiles.length > 0 && (
-                  <div className="mt-6">
-                     <h3 className="text-lg font-medium mb-2">Uploaded Files</h3>
-                     <ul className="list-disc pl-5">
-                        {uploadedFiles.map((file, index) => (
-                           <li key={index} className="mb-1">
-                              <div className="flex items-center gap-2">
-                                 <span>{file.name}</span>
-                                 <span className="text-xs text-gray-500">({(file.size / (1024 * 1024)).toFixed(2)} MB)</span>
-                                 <a href={file.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline">
-                                    View
-                                 </a>
-                              </div>
-                           </li>
-                        ))}
-                     </ul>
-                  </div>
-               )}
-            </CardContent>
-         </Card>
+  return (
+    <div className="container mx-auto space-y-8 py-8">
+      {/* Header */}
+      <div className="space-y-3 text-center">
+        <h1 className="font-bold text-2xl">Enhanced File Upload System</h1>
+        <div className="flex justify-center gap-2">
+          <Badge variant="outline">Multi-file</Badge>
+          <Badge variant="outline">Auto Chunking</Badge>
+          <Badge variant="outline">Live Progress</Badge>
+        </div>
       </div>
-   )
+
+      {/* Main Content */}
+      <Tabs className="w-full" defaultValue="uploader">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="uploader">Enhanced Uploader</TabsTrigger>
+          <TabsTrigger value="manager">Upload Manager</TabsTrigger>
+        </TabsList>
+
+        {/* Enhanced Uploader Tab */}
+        <TabsContent className="space-y-4" value="uploader">
+          {/* Enhanced File Uploader */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Upload Files</CardTitle>
+              <CardDescription className="text-sm">
+                Drag & drop files. Auto-chunks files &gt;100MB.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <EnhancedFileUploader
+                acceptedFileTypes={[
+                  "audio/mpeg",
+                  "application/zip",
+                  "image/jpeg",
+                  "image/png",
+                  "video/mp4",
+                  "application/pdf",
+                  "text/plain",
+                  "application/json",
+                ]}
+                allowMultiple={true}
+                // biome-ignore lint/style/noMagicNumbers: calculated value
+                maxFileSize={MAX_FILE_SIZE_MB * 1024 * 1024} // 5GB
+                maxFiles={10}
+                onError={handleUploadError}
+                onFilesUploaded={handleFilesUploaded}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Upload Results */}
+          {uploadError && (
+            <Card className="border-red-200">
+              <CardContent className="p-4">
+                <p className="font-medium text-red-600">Upload Error:</p>
+                <p className="text-red-500 text-sm">{uploadError}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {uploadedFiles.length > 0 && (
+            <Card className="border-green-200">
+              <CardHeader>
+                <CardTitle className="text-green-700">
+                  Successfully Uploaded Files
+                </CardTitle>
+                <CardDescription>
+                  {uploadedFiles.length} files uploaded successfully
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {uploadedFiles.map((file) => (
+                    <div
+                      className="flex items-center justify-between rounded-lg bg-green-50 p-3"
+                      key={`${file.name}-${file.size}-${file.type}`}
+                    >
+                      <div>
+                        <p className="font-medium">{file.name}</p>
+                        <p className="text-gray-600 text-sm">
+                          {/* biome-ignore lint/style/noMagicNumbers: calculated value */}
+                          {(file.size / (1024 * 1024)).toFixed(2)} MB •{" "}
+                          {file.type}
+                        </p>
+                      </div>
+                      <Badge className="bg-green-500">Completed</Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* Upload Manager Tab */}
+        <TabsContent className="space-y-4" value="manager">
+          {/* Upload Manager Component */}
+          <EnhancedFileUploadManager
+            autoRefresh={true}
+            refreshInterval={3000}
+            userId="test-user"
+          />
+        </TabsContent>
+      </Tabs>
+
+      {/* Technical Info */}
+      <Card className="border-gray-200">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">System Features</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="grid grid-cols-2 gap-3 text-gray-600 text-xs md:grid-cols-4">
+            <div>✅ Smart chunking</div>
+            <div>✅ Multi-file support</div>
+            <div>✅ Real-time progress</div>
+            <div>✅ Error recovery</div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
 }

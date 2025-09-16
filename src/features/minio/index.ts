@@ -1,3 +1,3 @@
-import "server-only"
+import "server-only";
 
-export { MinioClient } from "./lib/minio-client"
+export { MinioClient } from "./lib/minio-client";

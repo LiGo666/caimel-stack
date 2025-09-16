@@ -1,14 +1,14 @@
-import { PrismaClient } from "@/repository/prisma/generated"
-import {
-   CreatePathPassphraseInput,
-   UpdatePathPassphraseInput,
-   GetPathByIdInput,
-   GetPathByPathInput,
-   DeletePathInput,
-   ValidatePassphraseInput,
-} from "../schema/passphraseZodSchema"
+import { PrismaClient } from "@/repository/prisma/generated";
+import type {
+  CreatePathPassphraseInput,
+  DeletePathInput,
+  GetPathByIdInput,
+  GetPathByPathInput,
+  UpdatePathPassphraseInput,
+  ValidatePassphraseInput,
+} from "../schema/passphraseZodSchema";
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
 
 /**
  * Creates a new path with associated passphrases
@@ -16,7 +16,9 @@ const prisma = new PrismaClient()
  * @returns The created path object
  */
 export async function createPath(input: CreatePathPassphraseInput) {
-   return prisma.path.create({ data: { path: input.path, passphrases: input.passphrases } })
+  return prisma.path.create({
+    data: { path: input.path, passphrases: input.passphrases },
+  });
 }
 
 /**
@@ -25,7 +27,7 @@ export async function createPath(input: CreatePathPassphraseInput) {
  * @returns The path object if found, null otherwise
  */
 export async function getPathById(input: GetPathByIdInput) {
-   return prisma.path.findUnique({ where: { id: input.id } })
+  return prisma.path.findUnique({ where: { id: input.id } });
 }
 
 /**
@@ -34,7 +36,7 @@ export async function getPathById(input: GetPathByIdInput) {
  * @returns The path object if found, null otherwise
  */
 export async function getPathByPath(input: GetPathByPathInput) {
-   return prisma.path.findUnique({ where: { path: input.path } })
+  return prisma.path.findUnique({ where: { path: input.path } });
 }
 
 /**
@@ -43,7 +45,10 @@ export async function getPathByPath(input: GetPathByPathInput) {
  * @returns The updated path object
  */
 export async function updatePath(input: UpdatePathPassphraseInput) {
-   return prisma.path.update({ where: { id: input.id }, data: { passphrases: input.passphrases } })
+  return prisma.path.update({
+    where: { id: input.id },
+    data: { passphrases: input.passphrases },
+  });
 }
 
 /**
@@ -52,7 +57,7 @@ export async function updatePath(input: UpdatePathPassphraseInput) {
  * @returns The deleted path object
  */
 export async function deletePath(input: DeletePathInput) {
-   return prisma.path.delete({ where: { id: input.id } })
+  return prisma.path.delete({ where: { id: input.id } });
 }
 
 /**
@@ -60,14 +65,16 @@ export async function deletePath(input: DeletePathInput) {
  * @param input - Path and passphrase to validate
  * @returns True if the passphrase is valid for the path, false otherwise
  */
-export async function validatePassphrase(input: ValidatePassphraseInput): Promise<boolean> {
-   const path = await prisma.path.findUnique({ where: { path: input.path } })
+export async function validatePassphrase(
+  input: ValidatePassphraseInput
+): Promise<boolean> {
+  const path = await prisma.path.findUnique({ where: { path: input.path } });
 
-   if (!path) {
-      return false
-   }
+  if (!path) {
+    return false;
+  }
 
-   return path.passphrases.includes(input.passphrase)
+  return path.passphrases.includes(input.passphrase);
 }
 
 /**
@@ -75,5 +82,5 @@ export async function validatePassphrase(input: ValidatePassphraseInput): Promis
  * @returns Array of all path objects
  */
 export async function getAllPaths() {
-   return prisma.path.findMany()
+  return prisma.path.findMany();
 }

@@ -1,4 +1,5 @@
-import "server-only"
-export { locales, defaultLocale, localeFlagMap } from "./config/locales"
-export type { Locale } from "./config/locales"
-export * from "./lib/request"
+import "server-only";
+
+export type { Locale } from "./config/locales";
+export { defaultLocale, localeFlagMap, locales } from "./config/locales";
+export * from "./lib/request";

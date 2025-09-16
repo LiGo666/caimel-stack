@@ -1,2 +1,3 @@
-import "server-only"
-export * from "./lib/client"
+import "server-only";
+
+export * from "./lib/client";

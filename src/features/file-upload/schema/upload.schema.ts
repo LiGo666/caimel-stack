@@ -5,12 +5,14 @@ export const fileUploadRequestSchema = z.object({
   fileName: z.string().min(1, "File name is required"),
   fileType: z.string().min(1, "File type is required"),
   fileSize: z.number().positive("File size must be positive"),
-  config: z.object({
-    bucketName: z.string().optional(),
-    uploadFolder: z.string().optional(),
-    allowedFileTypes: z.array(z.string()).optional(),
-    maxFileSize: z.number().optional(),
-  }).optional(),
+  config: z
+    .object({
+      bucketName: z.string().optional(),
+      uploadFolder: z.string().optional(),
+      allowedFileTypes: z.array(z.string()).optional(),
+      maxFileSize: z.number().optional(),
+    })
+    .optional(),
 });
 
 export type FileUploadRequestSchema = z.infer<typeof fileUploadRequestSchema>;
@@ -31,16 +33,23 @@ export const multipartUploadInitSchema = z.object({
   fileName: z.string().min(1, "File name is required"),
   fileType: z.string().min(1, "File type is required"),
   fileSize: z.number().positive("File size must be positive"),
-  partSize: z.number().positive("Part size must be positive").default(8 * 1024 * 1024), // Default 8MB chunks
-  config: z.object({
-    bucketName: z.string().optional(),
-    uploadFolder: z.string().optional(),
-    allowedFileTypes: z.array(z.string()).optional(),
-    maxFileSize: z.number().optional(),
-  }).optional(),
+  partSize: z
+    .number()
+    .positive("Part size must be positive")
+    .default(8 * 1024 * 1024), // Default 8MB chunks
+  config: z
+    .object({
+      bucketName: z.string().optional(),
+      uploadFolder: z.string().optional(),
+      allowedFileTypes: z.array(z.string()).optional(),
+      maxFileSize: z.number().optional(),
+    })
+    .optional(),
 });
 
-export type MultipartUploadInitSchema = z.infer<typeof multipartUploadInitSchema>;
+export type MultipartUploadInitSchema = z.infer<
+  typeof multipartUploadInitSchema
+>;
 
 // Schema for multipart upload completion request
 export const multipartUploadCompleteSchema = z.object({
@@ -52,20 +61,28 @@ export const multipartUploadCompleteSchema = z.object({
       etag: z.string().min(1, "ETag is required"),
     })
   ),
-  config: z.object({
-    bucketName: z.string().optional(),
-  }).optional(),
+  config: z
+    .object({
+      bucketName: z.string().optional(),
+    })
+    .optional(),
 });
 
-export type MultipartUploadCompleteSchema = z.infer<typeof multipartUploadCompleteSchema>;
+export type MultipartUploadCompleteSchema = z.infer<
+  typeof multipartUploadCompleteSchema
+>;
 
 // Schema for multipart upload abort request
 export const multipartUploadAbortSchema = z.object({
   uploadId: z.string().min(1, "Upload ID is required"),
   key: z.string().min(1, "Object key is required"),
-  config: z.object({
-    bucketName: z.string().optional(),
-  }).optional(),
+  config: z
+    .object({
+      bucketName: z.string().optional(),
+    })
+    .optional(),
 });
 
-export type MultipartUploadAbortSchema = z.infer<typeof multipartUploadAbortSchema>;
+export type MultipartUploadAbortSchema = z.infer<
+  typeof multipartUploadAbortSchema
+>;

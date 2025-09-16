@@ -1,5 +1,5 @@
-import { PassphraseManager } from "@/features/secureApi/components/passphraseManager"
+import { PassphraseManager } from "@/features/secureApi/components/passphraseManager";
 
 export default function PassphraseManagerPage() {
-   return <PassphraseManager />
+  return <PassphraseManager />;
 }

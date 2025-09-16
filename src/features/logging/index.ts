@@ -1,2 +1,3 @@
-import "server-only"
-export * from "./types/errorCodes"
+import "server-only";
+
+export * from "./types/errorCodes";

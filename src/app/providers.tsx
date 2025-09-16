@@ -1,30 +1,39 @@
-"use client"
-import * as React from "react"
-import { ThemeProvider } from "next-themes"
-import { ClerkProvider } from "@clerk/nextjs"
-import { Toaster } from "@/features/shadcn/index.client"
-import { NextIntlClientProvider } from "next-intl"
-import { Locale } from "@/features/next-intl"
+"use client";
+import { ClerkProvider } from "@clerk/nextjs";
+import { NextIntlClientProvider } from "next-intl";
+import { ThemeProvider } from "next-themes";
+import type * as React from "react";
+import type { Locale } from "@/features/next-intl";
+import { Toaster } from "@/features/shadcn/index.client";
 
-const timeZone = "Europe/Berlin"
+const timeZone = "Europe/Berlin";
 
 export function AppProviders({
-   children,
-   locale,
-   messages,
+  children,
+  locale,
+  messages,
 }: {
-   children: React.ReactNode
-   locale?: Locale
-   messages?: Record<string, string | Record<string, string>>
+  children: React.ReactNode;
+  locale?: Locale;
+  messages?: Record<string, string | Record<string, string>>;
 }) {
-   return (
-      <NextIntlClientProvider timeZone={timeZone} locale={locale} messages={messages}>
-         <ClerkProvider>
-            <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-               {children}
-               <Toaster />
-            </ThemeProvider>
-         </ClerkProvider>
-      </NextIntlClientProvider>
-   )
+  return (
+    <NextIntlClientProvider
+      locale={locale}
+      messages={messages}
+      timeZone={timeZone}
+    >
+      <ClerkProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          disableTransitionOnChange
+          enableSystem
+        >
+          {children}
+          <Toaster />
+        </ThemeProvider>
+      </ClerkProvider>
+    </NextIntlClientProvider>
+  );
 }

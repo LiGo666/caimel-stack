@@ -1,21 +1,22 @@
-/** @type {import('jest').Config} */
-const config = {
-   preset: "ts-jest",
-   testEnvironment: "node",
-   testMatch: ["**/__tests__/**/*.ts?(x)", "**/?(*.)+(spec|test).ts?(x)"],
-   transform: { "^.+\\.(ts|tsx)$": "ts-jest" },
-   moduleNameMapper: {
-      "^@/(.*)$": "<rootDir>/src/$1",
-      "^@features/(.*)$": "<rootDir>/src/features/$1",
-      "^@app/(.*)$": "<rootDir>/src/app/$1",
-      // Mock server-only modules
-      "server-only": "<rootDir>/jest.setup.js",
-   },
-   setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
-   moduleDirectories: ["node_modules", "src"],
-   testPathIgnorePatterns: ["/node_modules/", "/.next/"],
-   // mute console.log/info but keep warn/error
-   silent: false,
-}
-
-module.exports = config
+module.exports = {
+  preset: "ts-jest",
+  testEnvironment: "jsdom",
+  testEnvironmentOptions: {
+    url: "http://localhost",
+  },
+  roots: ["<rootDir>/src"],
+  testMatch: [
+    "**/__tests__/**/*.(test|spec).(ts|tsx|js)",
+    "**/*.(test|spec).(ts|tsx|js)",
+  ],
+  transform: {
+    "^.+\\.(ts|tsx)$": "ts-jest",
+  },
+  transformIgnorePatterns: ["node_modules/(?!(next-intl)/)"],
+  collectCoverageFrom: ["src/**/*.(ts|tsx)", "!src/**/*.d.ts"],
+  moduleNameMapper: {
+    "^@/(.*)$": "<rootDir>/src/$1",
+    "^next-intl/server$": "<rootDir>/__mocks__/next-intl-server.js",
+  },
+  setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
+};
