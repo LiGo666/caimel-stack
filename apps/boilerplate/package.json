@@ -1,20 +1,15 @@
 {
-	"name": "boilerplate",
-	"version": "0.0.1",
-	"private": true,
-	"scripts": {
-		"dev": "next dev",
-		"build": "next build",
-		"start": "next start",
-		"lint": "biome check",
-		"format": "biome format --write",
-		"clean": "rm -rf .next node_modules"
-	},
-	"dependencies": {
-		"next": "workspace:*",
-		"react": "workspace:*",
-		"react-dom": "workspace:*",
-		"ui": "workspace:*"
-	},
-	"devDependencies": {}
+  "name": "boilerplate",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "biome check",
+    "format": "biome format --write",
+    "clean": "rm -rf .next node_modules"
+  },
+  "dependencies": {},
+  "devDependencies": {}
 }

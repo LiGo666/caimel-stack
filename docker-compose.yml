@@ -10,24 +10,67 @@ services:
     working_dir: /nextjs
     environment:
       APP_NAME: "boilerplate"
+      PNPM_STORE_DIR: /home/node/.pnpm-store
+      TURBO_TELEMETRY_DISABLED: "1"
+      NEXT_TELEMETRY_DISABLED: "1"
       NODE_ENV: development
       WATCHPACK_POLLING: "true"
       WATCHPACK_POLLING_INTERVAL: "200"
-      NEXT_TELEMETRY_DISABLED: "1"
+
       CI: "true"
-      PNPM_STORE_DIR: /home/node/.pnpm-store
       ADMIN_USERNAME: ${RANDOM_USERNAME}
       ADMIN_PASSWORD: ${STRONG_PASSWORD}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
 
     volumes:
       - ./:/nextjs:rw
-      - volume_nextjs_pnpm_store:/home/node/.pnpm-store:rw
-    command: ["pnpm", "turbo", "run", "dev", "--filter=boilerplate"]
+      - volume_boilerplate_pnpm_store:/home/node/.pnpm-store:rw
+    command:
+      [
+        "bash",
+        "-c",
+        "cd /nextjs && pnpm install --no-frozen-lockfile && pnpm turbo run dev --filter=boilerplate",
+      ]
     networks:
       - proxy
       - caimel-stack
+    healthcheck:
+      test: ["CMD", "true"]
 
+  boilerplate2:
+    build:
+      dockerfile: apps/boilerplate2/docker/dockerfile
+    restart: unless-stopped
+    user: 1000:1000
+    ports:
+      - "127.0.0.1:3045:3000"
+    working_dir: /nextjs
+    environment:
+      APP_NAME: "boilerplate2"
+      PNPM_STORE_DIR: /home/node/.pnpm-store
+      TURBO_TELEMETRY_DISABLED: "1"
+      NEXT_TELEMETRY_DISABLED: "1"
+      NODE_ENV: development
+      WATCHPACK_POLLING: "true"
+      WATCHPACK_POLLING_INTERVAL: "200"
+
+      CI: "true"
+      ADMIN_USERNAME: ${RANDOM_USERNAME}
+      ADMIN_PASSWORD: ${STRONG_PASSWORD}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+
+    volumes:
+      - ./:/nextjs:rw
+      - volume_boilerplate2_pnpm_store:/home/node/.pnpm-store:rw
+    command:
+      [
+        "bash",
+        "-c",
+        "cd /nextjs && pnpm install --no-frozen-lockfile && pnpm turbo run dev --filter=boilerplate2",
+      ]
+    networks:
+      - proxy
+      - caimel-stack
     healthcheck:
       test: ["CMD", "true"]
 
@@ -38,4 +81,5 @@ networks:
     external: true
 
 volumes:
-  volume_nextjs_pnpm_store:
+  volume_boilerplate_pnpm_store:
+  volume_boilerplate2_pnpm_store:

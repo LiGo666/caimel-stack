@@ -1,6 +1,6 @@
 packages:
-  - "PROJECTS/*"
-  - "SHARED/*"
+  - "apps/*"
+  - "packages/*"
 
 onlyBuiltDependencies:
   - esbuild
