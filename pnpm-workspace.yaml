@@ -1,5 +1,6 @@
+packages:
+  - "PROJECTS/*"
+  - "SHARED/*"
+
 onlyBuiltDependencies:
-   - "@prisma/engines"
-   - "@tailwindcss/oxide"
-   - esbuild
-   - prisma
+  - esbuild
