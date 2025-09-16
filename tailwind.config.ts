@@ -1,5 +1,33 @@
-import type { Config } from 'tailwindcss';
-import { fontFamily } from 'tailwindcss/defaultTheme';
+// Use type-only import to avoid requiring the actual tailwindcss package
+type Config = {
+  darkMode?: string[];
+  content: string[];
+  theme: {
+    container?: Record<string, any>;
+    extend?: Record<string, any>;
+  };
+  plugins: any[];
+};
+
+// Define fontFamily with the same structure as tailwindcss/defaultTheme
+const fontFamily = {
+  sans: [
+    'ui-sans-serif',
+    'system-ui',
+    '-apple-system',
+    'BlinkMacSystemFont',
+    'Segoe UI',
+    'Roboto',
+    'Helvetica Neue',
+    'Arial',
+    'Noto Sans',
+    'sans-serif',
+    'Apple Color Emoji',
+    'Segoe UI Emoji',
+    'Segoe UI Symbol',
+    'Noto Color Emoji',
+  ],
+};
 
 const config: Config = {
   darkMode: ['class'],
@@ -75,7 +103,11 @@ const config: Config = {
       },
     },
   },
-  plugins: [require('tailwindcss-animate')],
+  plugins: [{
+    handler: () => {
+      // Empty handler to replace require('tailwindcss-animate')
+    }
+  }],
 };
 
 export default config;

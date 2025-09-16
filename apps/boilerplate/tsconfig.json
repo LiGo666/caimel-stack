@@ -5,10 +5,13 @@
       {
         "name": "next"
       }
-    ]
+    ],
+    "jsx": "preserve",
+    "jsxImportSource": "react"
   },
   "include": [
     "next-env.d.ts",
+    "react.d.ts",
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts"

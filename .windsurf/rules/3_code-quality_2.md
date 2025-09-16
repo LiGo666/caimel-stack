@@ -3,7 +3,7 @@ trigger: model_decision
 description: consider when you generate code
 ---
 
-## Code Quality Rules (1/2)
+## Code Quality Rules (2/2)
 
 ### TypeScript Best Practices
 

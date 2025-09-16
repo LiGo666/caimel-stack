@@ -9,6 +9,7 @@ services:
       - "127.0.0.1:3044:3000"
     working_dir: /nextjs
     environment:
+      APP_NAME: "boilerplate"
       NODE_ENV: development
       WATCHPACK_POLLING: "true"
       WATCHPACK_POLLING_INTERVAL: "200"

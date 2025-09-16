@@ -13,10 +13,24 @@
 		"test": "turbo run test",
 		"clean": "turbo run clean && rm -rf node_modules"
 	},
+	"dependencies": {
+		"next": "^15.5.3",
+		"react": "^19.1.1",
+		"react-dom": "^19.1.1"
+	},
 	"devDependencies": {
 		"@biomejs/biome": "2.2.2",
+		"@next/bundle-analyzer": "^15.5.3",
+		"@next/eslint-plugin-next": "^15.5.3",
+		"eslint-config-next": "^15.5.3",
+		"@types/node": "^20.10.0",
+		"@types/react": "^19.0.0",
+		"@types/react-dom": "^19.0.0",
 		"husky": "^9.1.7",
 		"lint-staged": "^16.1.6",
+		"tailwindcss": "^3.3.0",
+		"tailwindcss-animate": "^1.0.7",
+		"typescript": "^5.3.0",
 		"turbo": "^2.5.6",
 		"ultracite": "5.3.3"
 	},
