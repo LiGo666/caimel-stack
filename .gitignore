@@ -1,2 +1,12 @@
+
+# Secret files
+.env
+
+# NextJS
+.next
 node_modules
-node_modules/*
+src/repository/prisma/generated
+
+
+# clerk configuration (can include secrets)
+/.clerk/

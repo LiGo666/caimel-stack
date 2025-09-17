@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 
-import rootConfig from "@features/nextjs/config/next.config.mjs";
+import rootConfig from "../../packages/features/nextjs/config/next.config.mjs";
 
 const nextConfig = {
   ...rootConfig,
