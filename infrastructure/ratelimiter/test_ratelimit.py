@@ -23,14 +23,14 @@ parser.add_argument('--quick-test', action='store_true', help='Run a quick test 
 parser.add_argument('--performancetest', action='store_true', help='Run a throughput test to measure Redis write performance')
 parser.add_argument('--duration', type=int, default=5, help='Duration of performance test in seconds (default: 5)')
 parser.add_argument('--threads', type=int, default=10, help='Number of concurrent threads for performance test (default: 10)')
-parser.add_argument('--port', type=int, default=8000, help='Port of the rate limiter service (default: 8000)')
+parser.add_argument('--port', type=int, default=8099, help='Port of the rate limiter service (default: 8099)')
 args = parser.parse_args()
 
 # Configuration
-# Inside the container, the service is on localhost:8000
-# From outside, it's mapped to localhost:8088
+# Inside the container, the service is on localhost:8099
+# From outside, it's mapped to localhost:8099
 API_HOST = "localhost"
-API_PORT = args.port or 8000
+API_PORT = args.port or 8099
 API_URL = f"http://{API_HOST}:{API_PORT}/ratelimit"
 HEALTH_URL = f"http://{API_HOST}:{API_PORT}/healthz"
 

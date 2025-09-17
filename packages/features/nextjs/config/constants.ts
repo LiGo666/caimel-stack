@@ -115,6 +115,45 @@ export const LOCAL_STORAGE_KEYS = {
   RECENT_SEARCHES: "recent-searches",
 } as const;
 
+export const HTTP_STATUS = {
+  // Success
+  OK: 200,
+  CREATED: 201,
+  ACCEPTED: 202,
+  NO_CONTENT: 204,
+  
+  // Client errors
+  BAD_REQUEST: 400,
+  UNAUTHORIZED: 401,
+  FORBIDDEN: 403,
+  NOT_FOUND: 404,
+  METHOD_NOT_ALLOWED: 405,
+  CONFLICT: 409,
+  RATE_LIMIT: 429,
+  
+  // Server errors
+  SERVER_ERROR: 500,
+  BAD_GATEWAY: 502,
+  SERVICE_UNAVAILABLE: 503,
+  GATEWAY_TIMEOUT: 504,
+} as const;
+
+export type HttpStatusCode = typeof HTTP_STATUS[keyof typeof HTTP_STATUS];
+
+export const ERROR_CODES = {
+  GENERIC: "GENERIC_ERROR",
+  NETWORK: "NETWORK_ERROR",
+  UNAUTHORIZED: "UNAUTHORIZED",
+  FORBIDDEN: "FORBIDDEN",
+  NOT_FOUND: "NOT_FOUND",
+  VALIDATION: "VALIDATION_ERROR",
+  SERVER: "SERVER_ERROR",
+  RATE_LIMIT: "RATE_LIMIT",
+  INTERNAL_ERROR: "INTERNAL_ERROR",
+} as const;
+
+export type ErrorCode = typeof ERROR_CODES[keyof typeof ERROR_CODES];
+
 export const ERROR_MESSAGES = {
   GENERIC: "Something went wrong. Please try again.",
   NETWORK: "Network error. Please check your connection.",
