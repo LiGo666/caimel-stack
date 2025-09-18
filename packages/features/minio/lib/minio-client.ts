@@ -1,562 +1,399 @@
-/** biome-ignore-all lint/suspicious/noConsole: <explanation> */
-import { buildARN, Client, NotificationConfig, QueueConfig } from "minio";
+/**
+ * MinIO client implementation for object storage operations
+ */
+
+import type { BucketItem } from "minio";
 import {
-  MINIO_ACCESS_KEY,
-  MINIO_HOST,
-  MINIO_NOTIFY_WEBHOOK_AUTH_TOKEN_NEXTJS,
-  MINIO_NOTIFY_WEBHOOK_ENDPOINT,
-  MINIO_SECRET_KEY,
-} from "@/features/env";
+  buildARN,
+  Client as MinioClient,
+  NotificationConfig,
+  PostPolicy,
+  QueueConfig,
+} from "minio";
 import {
+  ARN_ACCOUNT,
+  ARN_REGION,
+  ARN_RESOURCE,
+  ARN_SERVICE,
+  ARN_TYPE,
+  CONTENT_TYPE_HEADER,
   DEFAULT_MAX_FILE_SIZE,
+  DEFAULT_MINIO_CONFIG,
   DEFAULT_PRESIGNED_URL_EXPIRY,
+  DEFAULT_REGION,
   DEFAULT_S3_EVENTS,
-} from "../config/minio-defaults";
+  PART_NUMBER_PARAM,
+  UPLOAD_ID_PARAM,
+} from "../config";
 import type {
-  BucketConfig,
-  MinioConfig,
-  NotificationOptions,
+  BucketNotificationOptions,
+  MinioClientConfig,
+  MinioError,
+  MultipartUploadInitResponse,
+  MultipartUploadOptions,
+  MultipartUploadPart,
+  ObjectStorageClient,
+  PresignedPartUrlOptions,
+  PresignedPartUrlResponse,
   PresignedUrlOptions,
-  PresignedUrlResult,
+  PresignedUrlResponse,
 } from "../types";
 
+
 /**
- * MinioClient class for handling operations with MinIO
+ * Implementation of ObjectStorageClient using MinIO SDK
  */
-export class MinioClient {
-  public client: Client;
-  private config: MinioConfig;
+export class MinioObjectStorageClient implements ObjectStorageClient {
+  private readonly client: MinioClient;
+  private readonly logger: Console;
 
+  /**
+   * Creates a new MinIO client instance
+   *
+   * @param config - Configuration options for the MinIO client
+   * @param logger - Optional logger instance
+   */
   constructor(
-    config: MinioConfig = {
-      endpoint: MINIO_HOST,
-      accessKey: MINIO_ACCESS_KEY,
-      secretKey: MINIO_SECRET_KEY,
-    }
+    config: Partial<MinioClientConfig> = {},
+    logger: Console = console
   ) {
-    this.config = config;
+    // Merge provided config with defaults
+    const clientConfig = {
+      ...DEFAULT_MINIO_CONFIG,
+      ...config,
+    };
 
-    console.log(
-      `[MinioClient] Creating client with endpoint: ${config.endpoint}`
-    );
+    // Initialize MinIO client
+    this.client = new MinioClient(clientConfig);
+    this.logger = logger;
 
-    try {
-      this.client = new Client({
-        endPoint: config.endpoint,
-        accessKey: config.accessKey,
-        secretKey: config.secretKey,
-      });
-
-      console.log(
-        "[MinioClient] Client created successfully with configuration:",
-        { endPoint: config.endpoint }
-      );
-    } catch (error) {
-      console.error("[MinioClient] Failed to create client:", error);
-      throw new Error(
-        `Failed to initialize MinioClient: ${error instanceof Error ? error.message : String(error)}`
-      );
-    }
+    this.logger.info("MinIO client initialized", {
+      endpoint: clientConfig.endPoint,
+      port: clientConfig.port,
+      useSSL: clientConfig.useSSL,
+    });
   }
 
+  /**
+   * Get the underlying MinIO client instance
+   *
+   * @returns The MinIO client instance
+   */
+  getClient(): MinioClient {
+    return this.client;
+  }
+
+  /**
+   * Check if a bucket exists
+   *
+   * @param bucketName - Name of the bucket to check
+   * @returns Promise resolving to true if bucket exists, false otherwise
+   */
   async bucketExists(bucketName: string): Promise<boolean> {
     try {
-      console.log(`[MinioClient] Checking if bucket exists: ${bucketName}`);
-      const exists = await this.client.bucketExists(bucketName);
-      console.log(`[MinioClient] Bucket ${bucketName} exists: ${exists}`);
-      return exists;
+      return await this.client.bucketExists(bucketName);
     } catch (error) {
-      console.error(
-        `[MinioClient] Error checking if bucket exists (${bucketName}):`,
-        error
-      );
-      return false;
-    }
-  }
-
-  async createBucket(bucketConfig: BucketConfig): Promise<boolean> {
-    try {
-      const exists = await this.bucketExists(bucketConfig.name);
-      if (!exists) {
-        await this.client.makeBucket(bucketConfig.name, bucketConfig.region);
-      }
-      return true;
-    } catch (error) {
-      console.error("Error creating bucket:", error);
-      return false;
-    }
-  }
-
-  async generatePresignedUrl(
-    options: PresignedUrlOptions
-  ): Promise<PresignedUrlResult> {
-    try {
-      const {
+      this.logger.error("Error checking bucket existence", {
         bucketName,
-        objectName,
-        expiry = DEFAULT_PRESIGNED_URL_EXPIRY,
-        contentType,
-        maxSizeBytes = DEFAULT_MAX_FILE_SIZE,
-      } = options;
-
-      console.log(
-        `[MinioClient] Generating presigned URL for bucket: ${bucketName}, object: ${objectName}`
+        error,
+      });
+      throw this.formatError(
+        error as Error,
+        "Failed to check if bucket exists"
       );
-      console.log(`[MinioClient] Using endpoint: ${this.config.endpoint}`);
-
-      // Ensure bucket exists
-      const bucketExists = await this.bucketExists(bucketName);
-      if (!bucketExists) {
-        console.log(
-          `[MinioClient] Bucket ${bucketName} does not exist, creating it...`
-        );
-        await this.createBucket({ name: bucketName });
-      }
-
-      // Create a new PostPolicy object
-      console.log("[MinioClient] Creating new post policy");
-      const policy = this.client.newPostPolicy();
-
-      // Set policy expiration
-      const expirationDate = new Date(Date.now() + expiry * 1000);
-      console.log(
-        `[MinioClient] Setting policy expiration to: ${expirationDate.toISOString()}`
-      );
-      policy.setExpires(expirationDate);
-
-      // Set bucket and object name
-      console.log(
-        `[MinioClient] Setting policy bucket: ${bucketName}, key: ${objectName}`
-      );
-      policy.setBucket(bucketName);
-      policy.setKey(objectName);
-
-      // Set content length range using the provided maxSizeBytes or default
-      console.log(
-        `[MinioClient] Setting content length range: 0-${maxSizeBytes} (${Math.round(maxSizeBytes / (1024 * 1024 * 1024))}GB)`
-      );
-      policy.setContentLengthRange(0, maxSizeBytes);
-
-      // Set content type if provided
-      if (contentType) {
-        console.log(`[MinioClient] Setting content type: ${contentType}`);
-        policy.setContentType(contentType);
-      }
-
-      // Generate presigned URL
-      console.log("[MinioClient] Generating presigned post policy URL");
-      const presignedUrl = await this.client.presignedPostPolicy(policy);
-
-      console.log(
-        `[MinioClient] Generated presigned URL: ${presignedUrl.postURL}`
-      );
-      console.log("[MinioClient] With fields:", presignedUrl.formData);
-
-      return {
-        url: presignedUrl.postURL,
-        fields: presignedUrl.formData,
-        key: objectName,
-      };
-    } catch (error) {
-      console.error(
-        `[MinioClient] Error generating presigned URL for ${options.bucketName}/${options.objectName}:`,
-        error
-      );
-      console.error("[MinioClient] Error stack:", error.stack);
-      throw new Error(`Failed to generate presigned URL: ${error.message}`);
     }
   }
 
-  async bucketNotificationExists(bucketName: string): Promise<boolean> {
+  /**
+   * Create a new bucket
+   *
+   * @param bucketName - Name of the bucket to create
+   * @param region - Optional region for the bucket
+   * @returns Promise resolving when bucket is created
+   */
+  async makeBucket(bucketName: string, region = DEFAULT_REGION): Promise<void> {
     try {
-      console.log(
-        `[MinioClient] Checking if bucket notifications exist for: ${bucketName}`
-      );
-
-      return await new Promise<boolean>((resolve, reject) => {
-        this.client.getBucketNotification(
-          bucketName,
-          (err: any, notifications: any) => {
-            if (err) {
-              console.error(
-                "[MinioClient] Error checking bucket notifications:",
-                err
-              );
-              // Resolve with false instead of rejecting
-              resolve(false);
-              return;
-            }
-
-            // Debug: Output the full response
-            console.log(
-              `[MinioClient] Full notification response for ${bucketName}:`,
-              JSON.stringify(notifications, null, 2)
-            );
-
-            // Check if notifications is undefined or null
-            if (!notifications) {
-              console.log(
-                `[MinioClient] Bucket ${bucketName} has no notifications (undefined/null)`
-              );
-              resolve(false);
-              return;
-            }
-
-            // Check if the response is an empty object
-            if (
-              typeof notifications === "object" &&
-              Object.keys(notifications).length === 0
-            ) {
-              console.log(
-                `[MinioClient] Bucket ${bucketName} has empty notification config (no notifications)`
-              );
-              resolve(false);
-              return;
-            }
-
-            // Check for notifications based on the actual response structure
-            const hasQueueConfig =
-              notifications.QueueConfiguration &&
-              Array.isArray(notifications.QueueConfiguration) &&
-              notifications.QueueConfiguration.length > 0;
-
-            const hasTopicConfig =
-              notifications.TopicConfiguration &&
-              Array.isArray(notifications.TopicConfiguration) &&
-              notifications.TopicConfiguration.length > 0;
-
-            const hasCloudFunctionConfig =
-              notifications.CloudFunctionConfiguration &&
-              Array.isArray(notifications.CloudFunctionConfiguration) &&
-              notifications.CloudFunctionConfiguration.length > 0;
-
-            const hasNotifications = Boolean(
-              hasQueueConfig || hasTopicConfig || hasCloudFunctionConfig
-            );
-
-            console.log(
-              `[MinioClient] Bucket ${bucketName} has notifications: ${hasNotifications}`
-            );
-            resolve(hasNotifications);
-          }
-        );
+      await this.client.makeBucket(bucketName, region);
+      this.logger.info("Bucket created successfully", {
+        bucketName,
+        region,
       });
     } catch (error) {
-      console.error(
-        "[MinioClient] Error checking bucket notifications:",
-        error
-      );
-      return false;
+      this.logger.error("Error creating bucket", {
+        bucketName,
+        region,
+        error,
+      });
+      throw this.formatError(error as Error, "Failed to create bucket");
     }
   }
 
-  async setBucketNotification(options: NotificationOptions): Promise<boolean> {
+  /**
+   * Remove a bucket
+   *
+   * @param bucketName - Name of the bucket to remove
+   * @param force - If true, remove all objects in the bucket before removing the bucket
+   * @returns Promise resolving when bucket is removed
+   */
+  async removeBucket(bucketName: string, force = false): Promise<void> {
     try {
-      const { bucketName, prefix, suffix, events } = options;
-
-      // Use environment variables for webhook endpoint and auth token
-      console.log(
-        `[MinioClient] Setting up bucket notification for ${bucketName} to endpoint ${MINIO_NOTIFY_WEBHOOK_ENDPOINT}`
-      );
-
-      // Create notification configuration
-      const config = new NotificationConfig();
-
-      // Build ARN for the webhook using the correct format
-      // Format: arn:minio:sqs::NEXTJS:webhook
-      const arn = buildARN("minio", "sqs", "", "NEXTJS", "webhook");
-
-      // Create a new queue configuration with the ARN
-      const queue = new QueueConfig(arn);
-
-      // Add filters if provided
-      if (prefix) {
-        console.log(`[MinioClient] Adding prefix filter: ${prefix}`);
-        queue.addFilterPrefix(prefix);
-      }
-
-      if (suffix) {
-        console.log(`[MinioClient] Adding suffix filter: ${suffix}`);
-        queue.addFilterSuffix(suffix);
-      }
-
-      // Add events (default to ObjectCreatedAll if none specified)
-      const eventsToAdd = events?.length ? events : DEFAULT_S3_EVENTS;
-      eventsToAdd.forEach((event) => {
-        console.log(`[MinioClient] Adding event: ${event}`);
-        queue.addEvent(event);
-      });
-
-      console.log(
-        "[MinioClient] Using authentication token: MINIO_NOTIFY_WEBHOOK_AUTH_TOKEN_NEXTJS"
-      );
-      console.log(
-        `[MinioClient] Using webhook endpoint: ${MINIO_NOTIFY_WEBHOOK_ENDPOINT}`
-      );
-
-      // Add the queue to the config
-      config.add(queue);
-
-      // Set the bucket notification
-      await new Promise<void>((resolve, reject) => {
-        this.client.setBucketNotification(bucketName, config, (err: any) => {
-          if (err) {
-            console.error(
-              "[MinioClient] Error setting bucket notification:",
-              err
-            );
-            reject(err);
-            return;
-          }
-          console.log(
-            `[MinioClient] Successfully set up bucket notification for ${bucketName}`
-          );
-          resolve();
-        });
-      });
-
-      return true;
-    } catch (error) {
-      console.error("Error setting bucket notification:", error);
-      return false;
-    }
-  }
-
-  async removeBucketNotification(bucketName: string): Promise<boolean> {
-    try {
-      console.log(
-        `[MinioClient] Removing bucket notifications for ${bucketName}`
-      );
-
-      // Create an empty notification configuration
-      const emptyConfig = new NotificationConfig();
-
-      // Remove all notifications by setting an empty configuration
-      await new Promise<void>((resolve, reject) => {
-        this.client.setBucketNotification(
-          bucketName,
-          emptyConfig,
-          (err: any) => {
-            if (err) {
-              console.error(
-                "[MinioClient] Error removing bucket notifications:",
-                err
-              );
-              reject(err);
-              return;
-            }
-            console.log(
-              `[MinioClient] Successfully removed bucket notifications for ${bucketName}`
-            );
-            resolve();
-          }
-        );
-      });
-
-      return true;
-    } catch (error) {
-      console.error(
-        "[MinioClient] Error removing bucket notifications:",
-        error
-      );
-      return false;
-    }
-  }
-
-  async deleteBucket(bucketName: string, force = false): Promise<boolean> {
-    try {
-      console.log(
-        `[MinioClient] Deleting bucket: ${bucketName}${force ? " (force)" : ""}`
-      );
-
-      // Check if bucket exists first
-      const exists = await this.bucketExists(bucketName);
-      if (!exists) {
-        console.log(
-          `[MinioClient] Bucket ${bucketName} does not exist, nothing to delete`
-        );
-        return true;
-      }
-
-      // If force is true, remove all objects first
       if (force) {
-        try {
-          console.log(
-            `[MinioClient] Force option enabled, removing all objects from bucket ${bucketName}`
-          );
+        // List and remove all objects in the bucket
+        const objectsList = await this.listAllObjects(bucketName);
 
-          // List all objects in the bucket
-          const objectsStream = this.client.listObjects(bucketName, "", true);
-          const objectsToDelete: string[] = [];
+        if (objectsList.length > 0) {
+          // Filter out undefined names and cast to string[]
+          const objectNames = objectsList
+            .map((obj) => obj.name)
+            .filter((name): name is string => name !== undefined);
 
-          // Collect all object names
-          await new Promise<void>((resolve, reject) => {
-            objectsStream.on("data", (obj) => {
-              if (obj.name) {
-                objectsToDelete.push(obj.name);
-              }
-            });
-
-            objectsStream.on("error", (err) => {
-              console.error(
-                `[MinioClient] Error listing objects in bucket ${bucketName}:`,
-                err
-              );
-              reject(err);
-            });
-
-            objectsStream.on("end", () => {
-              resolve();
-            });
-          });
-
-          // Delete all objects
-          if (objectsToDelete.length > 0) {
-            console.log(
-              `[MinioClient] Removing ${objectsToDelete.length} objects from bucket ${bucketName}`
-            );
-            await this.client.removeObjects(bucketName, objectsToDelete);
-          } else {
-            console.log(
-              `[MinioClient] No objects to delete in bucket ${bucketName}`
-            );
+          if (objectNames.length > 0) {
+            await this.client.removeObjects(bucketName, objectNames);
           }
-        } catch (emptyError) {
-          console.error(
-            `[MinioClient] Error emptying bucket ${bucketName}:`,
-            emptyError
-          );
-          // Continue with deletion attempt even if emptying fails
         }
       }
 
-      // Delete the bucket
       await this.client.removeBucket(bucketName);
-      console.log(`[MinioClient] Successfully deleted bucket ${bucketName}`);
-
-      return true;
+      this.logger.info("Bucket removed successfully", { bucketName });
     } catch (error) {
-      console.error("[MinioClient] Error deleting bucket:", error);
-      return false;
+      this.logger.error("Error removing bucket", {
+        bucketName,
+        force,
+        error,
+      });
+      throw this.formatError(error as Error, "Failed to remove bucket");
     }
   }
 
-  // Multipart Upload Methods
+  /**
+   * Generate a presigned URL for uploading an object
+   *
+   * @param bucketName - Name of the bucket
+   * @param objectName - Name of the object
+   * @param options - Options for presigned URL generation
+   * @returns Promise resolving to presigned URL response
+   */
+  async generatePresignedUrl(
+    bucketName: string,
+    objectName: string,
+    options: PresignedUrlOptions = {}
+  ): Promise<PresignedUrlResponse> {
+    try {
+      // Ensure bucket exists
+      const bucketExists = await this.bucketExists(bucketName);
+      if (!bucketExists) {
+        this.logger.info("Bucket does not exist, creating it", { bucketName });
+        await this.makeBucket(bucketName);
+      }
+
+      const expiry = options.expiry || DEFAULT_PRESIGNED_URL_EXPIRY;
+      const maxFileSize = options.maxFileSize || DEFAULT_MAX_FILE_SIZE;
+
+      // Create policy for the presigned URL
+      const policy = new PostPolicy();
+      // biome-ignore lint/style/noMagicNumbers: calculation
+      policy.setExpires(new Date(Date.now() + expiry * 1000));
+      policy.setBucket(bucketName);
+      policy.setKey(objectName);
+      policy.setContentLengthRange(0, maxFileSize);
+
+      // Add content type restriction if specified
+      if (options.contentType) {
+        policy.setContentType(options.contentType);
+      }
+
+      const presignedPost = await this.client.presignedPostPolicy(policy);
+
+      return {
+        url: presignedPost.postURL,
+        formData: presignedPost.formData,
+      };
+    } catch (error) {
+      this.logger.error("Error generating presigned URL", {
+        bucketName,
+        objectName,
+        options,
+        error,
+      });
+      throw this.formatError(
+        error as Error,
+        "Failed to generate presigned URL"
+      );
+    }
+  }
 
   /**
    * Initiate a multipart upload
+   *
+   * @param bucketName - Name of the bucket
+   * @param objectName - Name of the object
+   * @param options - Options for multipart upload
+   * @returns Promise resolving to multipart upload initialization response
    */
   async initiateMultipartUpload(
     bucketName: string,
     objectName: string,
-    contentType?: string
-  ): Promise<string> {
+    options: MultipartUploadOptions = {}
+  ): Promise<MultipartUploadInitResponse> {
     try {
-      console.log(
-        `[MinioClient] Initiating multipart upload for ${bucketName}/${objectName}`
-      );
-
       // Ensure bucket exists
       const bucketExists = await this.bucketExists(bucketName);
       if (!bucketExists) {
-        console.log(
-          `[MinioClient] Bucket ${bucketName} does not exist, creating it...`
-        );
-        await this.createBucket({ name: bucketName });
+        this.logger.info("Bucket does not exist, creating it", { bucketName });
+        await this.makeBucket(bucketName);
       }
 
-      const metadata = contentType ? { "Content-Type": contentType } : {};
+      // Convert options to RequestHeaders format
+      const headers: Record<string, string> = {};
+
+      if (options.contentType) {
+        headers[CONTENT_TYPE_HEADER] = options.contentType;
+      }
+
+      if (options.metadata) {
+        for (const [key, value] of Object.entries(options.metadata)) {
+          headers[`x-amz-meta-${key}`] = value;
+        }
+      }
+
       const uploadId = await this.client.initiateNewMultipartUpload(
         bucketName,
         objectName,
-        metadata
+        headers
       );
 
-      console.log(
-        `[MinioClient] Multipart upload initiated with ID: ${uploadId}`
-      );
-      return uploadId;
+      return {
+        uploadId,
+        key: objectName,
+        bucket: bucketName,
+      };
     } catch (error) {
-      console.error("[MinioClient] Error initiating multipart upload:", error);
-      throw new Error(`Failed to initiate multipart upload: ${error.message}`);
+      this.logger.error("Error initiating multipart upload", {
+        bucketName,
+        objectName,
+        options,
+        error,
+      });
+      throw this.formatError(
+        error as Error,
+        "Failed to initiate multipart upload"
+      );
     }
   }
 
   /**
-   * Generate presigned URL for uploading a specific part
+   * Generate a presigned URL for uploading a part of a multipart upload
+   *
+   * @param bucketName - Name of the bucket
+   * @param objectName - Name of the object
+   * @param params - Parameters for presigned part URL generation
+   * @returns Promise resolving to presigned part URL response
    */
-  async generatePartUploadUrl(
+  async generatePresignedPartUrl(
     bucketName: string,
     objectName: string,
-    uploadId: string,
-    partNumber: number,
-    expiry = DEFAULT_PRESIGNED_URL_EXPIRY
-  ): Promise<string> {
+    params: {
+      uploadId: string;
+      partNumber: number;
+      options?: PresignedPartUrlOptions;
+    }
+  ): Promise<PresignedPartUrlResponse> {
     try {
-      console.log(
-        `[MinioClient] Generating part upload URL for ${bucketName}/${objectName}, part ${partNumber}`
+      const { uploadId, partNumber, options } = params;
+      const expiry = options?.expiry || DEFAULT_PRESIGNED_URL_EXPIRY;
+
+      // Create query parameters for the presigned URL
+      const reqParams: Record<string, string> = {};
+      reqParams[UPLOAD_ID_PARAM] = uploadId;
+      reqParams[PART_NUMBER_PARAM] = partNumber.toString();
+
+      // MinIO client expects query params as the third argument
+      // We need to combine object name with query params
+      const objectNameWithQuery = `${objectName}?${new URLSearchParams(reqParams).toString()}`;
+
+      const url = await this.client.presignedPutObject(
+        bucketName,
+        objectNameWithQuery,
+        expiry
       );
 
-      // For multipart uploads, we need to use presignedUrl method with query parameters
-      const presignedUrl = await this.client.presignedUrl(
-        "PUT",
+      return {
+        url,
+        partNumber,
+      };
+    } catch (error) {
+      const { uploadId, partNumber, options } = params;
+      this.logger.error("Error generating presigned part URL", {
         bucketName,
         objectName,
-        expiry,
-        { uploadId, partNumber: partNumber.toString() }
+        uploadId,
+        partNumber,
+        options,
+        error,
+      });
+      throw this.formatError(
+        error as Error,
+        "Failed to generate presigned part URL"
       );
-
-      console.log(
-        `[MinioClient] Part upload URL generated for part ${partNumber}`
-      );
-      return presignedUrl;
-    } catch (error) {
-      console.error("[MinioClient] Error generating part upload URL:", error);
-      throw new Error(`Failed to generate part upload URL: ${error.message}`);
     }
   }
 
   /**
    * Complete a multipart upload
+   *
+   * @param bucketName - Name of the bucket
+   * @param objectName - Name of the object
+   * @param uploadId - ID of the multipart upload
+   * @param parts - Array of part information
+   * @returns Promise resolving when multipart upload is completed
    */
   async completeMultipartUpload(
     bucketName: string,
     objectName: string,
     uploadId: string,
-    parts: { partNumber: number; etag: string }[]
-  ): Promise<string> {
+    parts: MultipartUploadPart[]
+  ): Promise<void> {
     try {
-      console.log(
-        `[MinioClient] Completing multipart upload for ${bucketName}/${objectName} with ${parts.length} parts`
-      );
+      // Convert parts to the format expected by the MinIO client
+      const minioPartsList = parts.map((part) => ({
+        part: part.partNumber,
+        etag: part.etag,
+      }));
 
-      // Convert parts to the format expected by MinIO client
-      const minioparts = parts
-        .sort((a, b) => a.partNumber - b.partNumber)
-        .map((part) => ({ part: part.partNumber, etag: part.etag }));
-
-      const result = await this.client.completeMultipartUpload(
+      await this.client.completeMultipartUpload(
         bucketName,
         objectName,
         uploadId,
-        minioparts
+        minioPartsList
       );
-
-      // Extract etag from result object
-      const etag =
-        typeof result === "string" ? result : result.etag || "completed";
-      console.log(
-        `[MinioClient] Multipart upload completed with ETag: ${etag}`
-      );
-      return etag;
+      this.logger.info("Multipart upload completed successfully", {
+        bucketName,
+        objectName,
+        uploadId,
+        partsCount: parts.length,
+      });
     } catch (error) {
-      console.error("[MinioClient] Error completing multipart upload:", error);
-      throw new Error(`Failed to complete multipart upload: ${error.message}`);
+      this.logger.error("Error completing multipart upload", {
+        bucketName,
+        objectName,
+        uploadId,
+        parts,
+        error,
+      });
+      throw this.formatError(
+        error as Error,
+        "Failed to complete multipart upload"
+      );
     }
   }
 
   /**
    * Abort a multipart upload
+   *
+   * @param bucketName - Name of the bucket
+   * @param objectName - Name of the object
+   * @param uploadId - ID of the multipart upload
+   * @returns Promise resolving when multipart upload is aborted
    */
   async abortMultipartUpload(
     bucketName: string,
@@ -564,46 +401,196 @@ export class MinioClient {
     uploadId: string
   ): Promise<void> {
     try {
-      console.log(
-        `[MinioClient] Aborting multipart upload for ${bucketName}/${objectName}`
-      );
-
       await this.client.abortMultipartUpload(bucketName, objectName, uploadId);
-
-      console.log("[MinioClient] Multipart upload aborted successfully");
+      this.logger.info("Multipart upload aborted successfully", {
+        bucketName,
+        objectName,
+        uploadId,
+      });
     } catch (error) {
-      console.error("[MinioClient] Error aborting multipart upload:", error);
-      throw new Error(`Failed to abort multipart upload: ${error.message}`);
+      this.logger.error("Error aborting multipart upload", {
+        bucketName,
+        objectName,
+        uploadId,
+        error,
+      });
+      throw this.formatError(
+        error as Error,
+        "Failed to abort multipart upload"
+      );
     }
   }
 
   /**
-   * List parts of a multipart upload (using alternative approach since listParts is protected)
+   * Set bucket notification configuration
+   *
+   * @param bucketName - Name of the bucket
+   * @param options - Notification configuration options
+   * @returns Promise resolving when notification is set
    */
-  async listMultipartUploadParts(
+  async setBucketNotification(
     bucketName: string,
-    objectName: string,
-    uploadId: string
-  ): Promise<any[]> {
+    options: BucketNotificationOptions
+  ): Promise<void> {
     try {
-      console.log(
-        `[MinioClient] Listing parts for multipart upload ${bucketName}/${objectName}`
-      );
+      // Create notification configuration
+      const notificationConfig = new NotificationConfig();
 
-      // Since listParts is protected, we'll track parts in our database instead
-      // This method is mainly for compatibility and debugging purposes
-      console.log(
-        `[MinioClient] Parts tracking handled via database - uploadId: ${uploadId}`
+      // Create queue configuration
+      const arn = buildARN(
+        ARN_SERVICE,
+        ARN_TYPE,
+        ARN_REGION,
+        ARN_ACCOUNT,
+        ARN_RESOURCE
       );
-      return [];
+      const queueConfig = new QueueConfig(arn);
+
+      // Add filters if provided
+      if (options.prefix) {
+        queueConfig.addFilterPrefix(options.prefix);
+      }
+
+      if (options.suffix) {
+        queueConfig.addFilterSuffix(options.suffix);
+      }
+
+      // Add events
+      const events =
+        options.events.length > 0 ? options.events : DEFAULT_S3_EVENTS;
+
+      for (const event of events) {
+        queueConfig.addEvent(event);
+      }
+
+      // Add webhook configuration
+      const webhookConfig = {
+        endpoint: options.webhookEndpoint,
+        authToken: options.authToken,
+      };
+
+      // biome-ignore lint/suspicious/noExplicitAny: MinIO SDK typing issue
+      (queueConfig as any).config.webhookConfig = webhookConfig;
+
+      // Add queue to notification config
+      notificationConfig.add(queueConfig);
+
+      // Set bucket notification
+      await this.client.setBucketNotification(bucketName, notificationConfig);
+      this.logger.info("Bucket notification set successfully", {
+        bucketName,
+        events,
+        webhookEndpoint: options.webhookEndpoint,
+      });
     } catch (error) {
-      console.error(
-        "[MinioClient] Error listing multipart upload parts:",
-        error
-      );
-      throw new Error(
-        `Failed to list multipart upload parts: ${error.message}`
+      this.logger.error("Error setting bucket notification", {
+        bucketName,
+        options,
+        error,
+      });
+      throw this.formatError(
+        error as Error,
+        "Failed to set bucket notification"
       );
     }
+  }
+
+  /**
+   * Get bucket notification configuration
+   *
+   * @param bucketName - Name of the bucket
+   * @returns Promise resolving to notification configuration
+   */
+  async getBucketNotification(
+    bucketName: string
+  ): Promise<Record<string, unknown>> {
+    try {
+      const notificationConfig =
+        await this.client.getBucketNotification(bucketName);
+      // Convert NotificationConfig to Record<string, unknown>
+      return JSON.parse(JSON.stringify(notificationConfig));
+    } catch (error) {
+      this.logger.error("Error getting bucket notification", {
+        bucketName,
+        error,
+      });
+      throw this.formatError(
+        error as Error,
+        "Failed to get bucket notification"
+      );
+    }
+  }
+
+  /**
+   * Remove bucket notification configuration
+   *
+   * @param bucketName - Name of the bucket
+   * @returns Promise resolving when notification is removed
+   */
+  async removeBucketNotification(bucketName: string): Promise<void> {
+    try {
+      // Create empty notification config
+      const notificationConfig = new NotificationConfig();
+
+      // Set empty notification config to remove all notifications
+      await this.client.setBucketNotification(bucketName, notificationConfig);
+      this.logger.info("Bucket notification removed successfully", {
+        bucketName,
+      });
+    } catch (error) {
+      this.logger.error("Error removing bucket notification", {
+        bucketName,
+        error,
+      });
+      throw this.formatError(
+        error as Error,
+        "Failed to remove bucket notification"
+      );
+    }
+  }
+
+  /**
+   * List all objects in a bucket
+   *
+   * @param bucketName - Name of the bucket
+   * @param prefix - Optional prefix filter
+   * @returns Promise resolving to array of objects
+   */
+  private async listAllObjects(
+    bucketName: string,
+    prefix = ""
+  ): Promise<BucketItem[]> {
+    return await new Promise((resolve, reject) => {
+      const objects: BucketItem[] = [];
+      const stream = this.client.listObjects(bucketName, prefix, true);
+
+      stream.on("data", (obj) => {
+        // Validate that obj is a BucketItem before pushing
+        if (obj && typeof obj.name === "string") {
+          objects.push(obj as BucketItem);
+        }
+      });
+
+      stream.on("end", () => {
+        resolve(objects);
+      });
+
+      stream.on("error", (err) => {
+        reject(err);
+      });
+    });
+  }
+
+  /**
+   * Format error for consistent error handling
+   *
+   * @param error - Original error
+   * @param message - Error message
+   * @returns Formatted error
+   */
+  private formatError(error: Error, message: string): MinioError {
+    const minioError = error as MinioError;
+    minioError.message = `${message}: ${error.message}`;
+    return minioError;
   }
 }

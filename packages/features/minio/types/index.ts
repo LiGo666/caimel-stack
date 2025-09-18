@@ -1,81 +1,157 @@
-export interface MinioConfig {
-  endpoint: string;
+/**
+ * Types for MinIO client operations
+ */
+
+import type { Client as MinioClient } from "minio";
+
+/**
+ * Configuration options for initializing the MinIO client
+ */
+export type MinioClientConfig = {
+  endPoint: string;
+  port: number;
+  useSSL: boolean;
   accessKey: string;
   secretKey: string;
-}
-
-export interface BucketConfig {
-  name: string;
   region?: string;
 }
 
-export interface PresignedUrlOptions {
-  bucketName: string;
-  objectName: string;
-  expiry?: number; // in seconds
+/**
+ * Options for presigned URL generation
+ */
+export type PresignedUrlOptions = {
+  expiry?: number;
   contentType?: string;
-  maxSizeBytes?: number; // Maximum allowed file size in bytes
+  maxFileSize?: number;
 }
 
-export interface PresignedUrlResult {
+/**
+ * Response for presigned URL generation
+ */
+export type PresignedUrlResponse = {
   url: string;
-  fields?: Record<string, string>;
-  key: string;
+  formData: Record<string, string>;
 }
 
-export interface ObjectInfo {
-  name: string;
-  prefix: string;
-  size: number;
-  etag: string;
-  lastModified: Date;
-}
-
-export interface ListObjectsOptions {
-  bucketName: string;
-  prefix?: string;
-  recursive?: boolean;
-  maxKeys?: number;
-}
-
-// Multipart upload types
-export interface MultipartUploadOptions {
-  bucketName: string;
-  objectName: string;
+/**
+ * Options for multipart upload initialization
+ */
+export type MultipartUploadOptions = {
   contentType?: string;
-  partCount: number;
-  expiry?: number; // in seconds
+  metadata?: Record<string, string>;
 }
 
-export interface MultipartUploadInitResult {
+/**
+ * Response for multipart upload initialization
+ */
+export type MultipartUploadInitResponse = {
   uploadId: string;
   key: string;
-  parts: MultipartUploadPart[];
-  completeUrl?: string;
+  bucket: string;
 }
 
-export interface MultipartUploadPart {
+/**
+ * Options for generating presigned URLs for multipart upload parts
+ */
+export type PresignedPartUrlOptions = {
+  expiry?: number;
+}
+
+/**
+ * Response for presigned part URL generation
+ */
+export type PresignedPartUrlResponse = {
+  url: string;
   partNumber: number;
-  url: string;
 }
 
-export interface MultipartUploadCompleteOptions {
-  bucketName: string;
-  objectName: string;
-  uploadId: string;
-  parts: MultipartUploadCompletePart[];
-}
-
-export interface MultipartUploadCompletePart {
+/**
+ * Part information for completing multipart uploads
+ */
+export type MultipartUploadPart = {
   partNumber: number;
   etag: string;
 }
 
-export interface NotificationOptions {
-  bucketName: string;
-  endpoint: string;
+/**
+ * Options for bucket notification configuration
+ */
+export type BucketNotificationOptions = {
+  events: string[];
   prefix?: string;
   suffix?: string;
-  events?: string[];
+  webhookEndpoint: string;
   authToken?: string;
+}
+
+/**
+ * Error response from MinIO operations
+ */
+export interface MinioError extends Error {
+  code?: string;
+  statusCode?: number;
+  resource?: string;
+  bucketName?: string;
+  objectName?: string;
+}
+
+/**
+ * Object storage client interface
+ */
+export type ObjectStorageClient = {
+  // Client management
+  getClient(): MinioClient;
+  
+  // Bucket operations
+  bucketExists(bucketName: string): Promise<boolean>;
+  makeBucket(bucketName: string, region?: string): Promise<void>;
+  removeBucket(bucketName: string, force?: boolean): Promise<void>;
+  
+  // Object operations
+  generatePresignedUrl(
+    bucketName: string,
+    objectName: string,
+    options?: PresignedUrlOptions
+  ): Promise<PresignedUrlResponse>;
+  
+  // Multipart upload operations
+  initiateMultipartUpload(
+    bucketName: string,
+    objectName: string,
+    options?: MultipartUploadOptions
+  ): Promise<MultipartUploadInitResponse>;
+  
+  generatePresignedPartUrl(
+    bucketName: string,
+    objectName: string,
+    params: {
+      uploadId: string;
+      partNumber: number;
+      options?: PresignedPartUrlOptions;
+    }
+  ): Promise<PresignedPartUrlResponse>;
+  
+  completeMultipartUpload(
+    bucketName: string,
+    objectName: string,
+    uploadId: string,
+    parts: MultipartUploadPart[]
+  ): Promise<void>;
+  
+  abortMultipartUpload(
+    bucketName: string,
+    objectName: string,
+    uploadId: string
+  ): Promise<void>;
+  
+  // Notification operations
+  setBucketNotification(
+    bucketName: string,
+    options: BucketNotificationOptions
+  ): Promise<void>;
+  
+  // Response structure varies based on notification configuration
+  getBucketNotification(bucketName: string): Promise<Record<string, unknown>>;
+  
+  removeBucketNotification(bucketName: string): Promise<void>;
 }

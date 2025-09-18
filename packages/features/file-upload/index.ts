@@ -1,2 +1,4 @@
 /** biome-ignore-all lint/performance/noBarrelFile: simple barrel file is okay */
-export { MinioObjectStorageClient } from "./lib/minio-client";
+
+export * from "./lib";
+export * from "./config";
