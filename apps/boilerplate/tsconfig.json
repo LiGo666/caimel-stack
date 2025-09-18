@@ -15,6 +15,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "../../packages/features/toast/providers/ToastProvider.tsx"
+    "../../packages/features/toast/providers/ToastProvider.tsx",
+    "../../packages/features/nextjs/lib/middleware.ts"
   ]
 }

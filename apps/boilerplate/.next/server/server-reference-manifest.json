@@ -1,5 +1,19 @@
 {
-  "node": {},
+  "node": {
+    "00f66de20d30394e1744a4d41df53fa18e76dc7a34": {
+      "workers": {
+        "app/test2/page": {
+          "moduleId": "(action-browser)/../../node_modules/.pnpm/next@15.5.3_react-dom@19.1.1_react@19.1.1__react@19.1.1/node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2Fnextjs%2Fapps%2Fboilerplate%2Fapp%2Ftest2%2Factions.ts%22%2C%5B%7B%22id%22%3A%2200f66de20d30394e1744a4d41df53fa18e76dc7a34%22%2C%22exportedName%22%3A%22callServerAction%22%2C%22filename%22%3A%22app%2Ftest2%2Factions.ts%22%7D%5D%5D%5D&__client_imported__=true!",
+          "async": false
+        }
+      },
+      "layer": {
+        "app/test2/page": "action-browser"
+      },
+      "filename": "app/test2/actions.ts",
+      "exportedName": "callServerAction"
+    }
+  },
   "edge": {},
   "encryptionKey": "7fwehI7Wa3D6DW963GQPDR3ye6RykWurlZjD4YEM8rI="
 }
