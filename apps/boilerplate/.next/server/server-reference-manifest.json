@@ -12,6 +12,45 @@
       },
       "filename": "app/test2/actions.ts",
       "exportedName": "callServerAction"
+    },
+    "40193fc899e937c0622e6e040c8f216ebba59521b9": {
+      "workers": {
+        "app/fileupload/page": {
+          "moduleId": "(action-browser)/../../node_modules/.pnpm/next@15.5.3_react-dom@19.1.1_react@19.1.1__react@19.1.1/node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2Fnextjs%2Fapps%2Fboilerplate%2Fapp%2Ffileupload%2F(actions)%2FbetterMockFileUploadAction.ts%22%2C%5B%7B%22id%22%3A%2240193fc899e937c0622e6e040c8f216ebba59521b9%22%2C%22exportedName%22%3A%22finalizeUploadAction%22%2C%22filename%22%3A%22app%2Ffileupload%2F(actions)%2FbetterMockFileUploadAction.ts%22%7D%2C%7B%22id%22%3A%22401b497edaf78ccb812f4d34e5cbd11693705ffcfb%22%2C%22exportedName%22%3A%22cancelUploadAction%22%2C%22filename%22%3A%22app%2Ffileupload%2F(actions)%2FbetterMockFileUploadAction.ts%22%7D%2C%7B%22id%22%3A%224088f8c3642142d87c8776867ab773b74458888016%22%2C%22exportedName%22%3A%22generateUploadTokensAction%22%2C%22filename%22%3A%22app%2Ffileupload%2F(actions)%2FbetterMockFileUploadAction.ts%22%7D%5D%5D%5D&__client_imported__=true!",
+          "async": false
+        }
+      },
+      "layer": {
+        "app/fileupload/page": "action-browser"
+      },
+      "filename": "app/fileupload/(actions)/betterMockFileUploadAction.ts",
+      "exportedName": "finalizeUploadAction"
+    },
+    "401b497edaf78ccb812f4d34e5cbd11693705ffcfb": {
+      "workers": {
+        "app/fileupload/page": {
+          "moduleId": "(action-browser)/../../node_modules/.pnpm/next@15.5.3_react-dom@19.1.1_react@19.1.1__react@19.1.1/node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2Fnextjs%2Fapps%2Fboilerplate%2Fapp%2Ffileupload%2F(actions)%2FbetterMockFileUploadAction.ts%22%2C%5B%7B%22id%22%3A%2240193fc899e937c0622e6e040c8f216ebba59521b9%22%2C%22exportedName%22%3A%22finalizeUploadAction%22%2C%22filename%22%3A%22app%2Ffileupload%2F(actions)%2FbetterMockFileUploadAction.ts%22%7D%2C%7B%22id%22%3A%22401b497edaf78ccb812f4d34e5cbd11693705ffcfb%22%2C%22exportedName%22%3A%22cancelUploadAction%22%2C%22filename%22%3A%22app%2Ffileupload%2F(actions)%2FbetterMockFileUploadAction.ts%22%7D%2C%7B%22id%22%3A%224088f8c3642142d87c8776867ab773b74458888016%22%2C%22exportedName%22%3A%22generateUploadTokensAction%22%2C%22filename%22%3A%22app%2Ffileupload%2F(actions)%2FbetterMockFileUploadAction.ts%22%7D%5D%5D%5D&__client_imported__=true!",
+          "async": false
+        }
+      },
+      "layer": {
+        "app/fileupload/page": "action-browser"
+      },
+      "filename": "app/fileupload/(actions)/betterMockFileUploadAction.ts",
+      "exportedName": "cancelUploadAction"
+    },
+    "4088f8c3642142d87c8776867ab773b74458888016": {
+      "workers": {
+        "app/fileupload/page": {
+          "moduleId": "(action-browser)/../../node_modules/.pnpm/next@15.5.3_react-dom@19.1.1_react@19.1.1__react@19.1.1/node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2Fnextjs%2Fapps%2Fboilerplate%2Fapp%2Ffileupload%2F(actions)%2FbetterMockFileUploadAction.ts%22%2C%5B%7B%22id%22%3A%2240193fc899e937c0622e6e040c8f216ebba59521b9%22%2C%22exportedName%22%3A%22finalizeUploadAction%22%2C%22filename%22%3A%22app%2Ffileupload%2F(actions)%2FbetterMockFileUploadAction.ts%22%7D%2C%7B%22id%22%3A%22401b497edaf78ccb812f4d34e5cbd11693705ffcfb%22%2C%22exportedName%22%3A%22cancelUploadAction%22%2C%22filename%22%3A%22app%2Ffileupload%2F(actions)%2FbetterMockFileUploadAction.ts%22%7D%2C%7B%22id%22%3A%224088f8c3642142d87c8776867ab773b74458888016%22%2C%22exportedName%22%3A%22generateUploadTokensAction%22%2C%22filename%22%3A%22app%2Ffileupload%2F(actions)%2FbetterMockFileUploadAction.ts%22%7D%5D%5D%5D&__client_imported__=true!",
+          "async": false
+        }
+      },
+      "layer": {
+        "app/fileupload/page": "action-browser"
+      },
+      "filename": "app/fileupload/(actions)/betterMockFileUploadAction.ts",
+      "exportedName": "generateUploadTokensAction"
     }
   },
   "edge": {},

@@ -28,6 +28,14 @@
       "static/chunks/main-app.js",
       "static/chunks/commons.js",
       "static/chunks/app/test2/page.js"
+    ],
+    "/fileupload/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/vendors-_app-pages-browser_node_modules_pnpm_next_15_5_3_react-dom_19_1_1_react_19_1_1__react-afd2b6.js",
+      "static/chunks/main-app.js",
+      "static/chunks/commons.js",
+      "static/chunks/vendors-_app-pages-browser_node_modules_pnpm_radix-ui_react-progress_1_1_7__types_react-dom_1-f53072.js",
+      "static/chunks/app/fileupload/page.js"
     ]
   }
 }
