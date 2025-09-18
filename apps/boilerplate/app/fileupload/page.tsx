@@ -1,6 +1,6 @@
 "use client";
 
-import { FileUpload } from "@features/file-upload/components";
+import { FileUpload } from "@features/file-upload/components/FileUpload";
 import {
   cancelUploadAction,
   finalizeUploadAction,
@@ -9,8 +9,14 @@ import {
 
 // Constants to avoid magic numbers and improve readability
 const MAX_FILES = 5;
-const MAX_SIZE_MB = 50;
-const ALLOWED_AUDIO_TYPES = ["audio/mpeg", "audio/wav", "audio/ogg"];
+const MAX_SIZE_MB = 5000;
+const ALLOWED_TYPES = [
+  "audio/mpeg",
+  "audio/wav",
+  "audio/ogg",
+  "text/plain",
+  "application/pdf",
+];
 
 export default function Page() {
   return (
@@ -27,7 +33,7 @@ export default function Page() {
           finalizeUpload: finalizeUploadAction,
           generateUploadTokens: generateUploadTokensAction,
         }}
-        allowedTypes={ALLOWED_AUDIO_TYPES}
+        allowedTypes={ALLOWED_TYPES}
         maxFiles={MAX_FILES}
         maxSizeMB={MAX_SIZE_MB}
         onComplete={(files) => {

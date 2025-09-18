@@ -6,6 +6,10 @@ import type { Client as MinioClient } from "minio";
 
 /**
  * Configuration options for initializing the MinIO client
+ * 
+ * Can be provided in two ways:
+ * 1. Using MINIO_ENDPOINT as a full URI (https://upload.caimel.tools)
+ * 2. Using MINIO_HOST, MINIO_PORT, and MINIO_SSL separately
  */
 export type MinioClientConfig = {
   endPoint: string;

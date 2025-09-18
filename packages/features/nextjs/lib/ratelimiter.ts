@@ -5,6 +5,7 @@ import type { NextRequest } from "next/server";
  * In Docker, we need to use the service name as the hostname
  */
 const RATE_LIMITER_HOST = process.env.RATE_LIMITER_HOST || "http://redis-ratelimiter:8000";
+const RATE_LIMITER_ENABLED = process.env.RATE_LIMITER_ENABLED !== "false";
 const DEFAULT_RATE_LIMIT = 20; // Number of requests allowed
 const DEFAULT_WINDOW_MS = 60_000; // Time window in milliseconds (1 minute)
 
@@ -105,7 +106,19 @@ export async function isRateLimited(
   actionType = "server-action",
   options: RateLimiterOptions = {}
 ): Promise<boolean> {
-  // This will throw an error if the rate limiter service is unavailable
-  const result = await checkRateLimit(request, actionType, options);
-  return !result.allow;
+  // Skip rate limiting if disabled
+  if (!RATE_LIMITER_ENABLED) {
+    return false;
+  }
+  
+  try {
+    // This will throw an error if the rate limiter service is unavailable
+    const result = await checkRateLimit(request, actionType, options);
+    return !result.allow;
+  } catch (error) {
+    // If the rate limiter service is unavailable, allow the request
+    // biome-ignore lint/suspicious/noConsole: logging errors
+    console.warn("Rate limiter service unavailable, allowing request", error);
+    return false;
+  }
 }

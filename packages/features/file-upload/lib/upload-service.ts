@@ -19,6 +19,8 @@ const BYTES_IN_KB = 1024;
 const BYTES_IN_MB = BYTES_IN_KB * BYTES_IN_KB;
 const DEFAULT_EXPIRY_SECONDS = 3600; // 1 hour
 
+// No URL fixing - we'll configure MinIO correctly instead
+
 // Cache for upload tokens
 const tokenCache = new Map<
   string,
@@ -98,7 +100,11 @@ export async function generateUploadTokens(
           config.allowedTypes.length === 1 ? config.allowedTypes[0] : undefined,
       }
     );
-
+    
+    // Log the presigned URL from MinIO
+    // biome-ignore lint/suspicious/noConsole: This is for debugging purposes
+    console.log("Presigned URL from MinIO:", response.url);
+    
     // Add to tokens
     tokens.push({
       uploadUrl: response.url,

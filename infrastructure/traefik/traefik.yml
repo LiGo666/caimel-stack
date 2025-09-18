@@ -1,0 +1,27 @@
+
+entryPoints:
+  websecure:
+    address: ":443"
+
+api:
+  insecure: true
+
+log:
+  level: INFO
+
+accessLog: {}
+
+providers:
+  file:
+    filename: "/etc/traefik/config.yml"
+    watch: true
+
+tls:
+  certificates:
+    - certFile: /etc/traefik/certs/caimel.tools.pem
+      keyFile:  /etc/traefik/certs/caimel.tools.key
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /etc/traefik/certs/caimel.tools.pem
+        keyFile: /etc/traefik/certs/caimel.tools.key

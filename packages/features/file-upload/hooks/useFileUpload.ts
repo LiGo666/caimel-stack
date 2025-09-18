@@ -127,6 +127,9 @@ export function useFileUpload(
         files.length
       );
       setUploadIdentifier(identifier);
+      
+      // Log the tokens for debugging
+      console.log("Upload tokens:", tokens);
 
       // Start uploading files
       setStatus("uploading");
@@ -165,15 +168,21 @@ export function useFileUpload(
             const HTTP_OK_MIN = 200;
             const HTTP_OK_MAX = 300;
             if (xhr.status >= HTTP_OK_MIN && xhr.status < HTTP_OK_MAX) {
+              console.log(`Upload succeeded for ${file.file.name}:`, xhr.responseText || "No response text");
               updateFileStatus(index, "success");
               resolve();
             } else {
+              console.error(`Upload failed for ${file.file.name}:`, {
+                status: xhr.status,
+                statusText: xhr.statusText,
+                response: xhr.responseText || "No response text"
+              });
               updateFileStatus(
                 index,
                 "error",
-                `Upload failed with status ${xhr.status}`
+                `Upload failed with status ${xhr.status}: ${xhr.statusText}`
               );
-              reject(new Error(`Upload failed with status ${xhr.status}`));
+              reject(new Error(`Upload failed with status ${xhr.status}: ${xhr.statusText}`));
             }
           });
 
@@ -187,7 +196,29 @@ export function useFileUpload(
             reject(new Error("Upload aborted"));
           });
 
-          xhr.open("POST", token.uploadUrl);
+          // Make sure we're using the full URL from the token, not just the path
+          // This ensures we're posting to the presigned URL from MinIO, not to a relative path
+          
+          // Log the raw URL from the token
+          console.log("Raw token URL:", token.uploadUrl);
+          
+          // Parse the URL to ensure we're using the full URL
+          let uploadUrl: string;
+          try {
+            // Try to parse as a URL - this will throw if it's not a valid URL
+            new URL(token.uploadUrl);
+            // If it doesn't throw, it's a valid absolute URL
+            uploadUrl = token.uploadUrl;
+          } catch (_error) {
+            // If parsing fails, it's likely a relative URL
+            // Prepend the origin to make it absolute
+            uploadUrl = `${window.location.origin}${token.uploadUrl.startsWith('/') ? '' : '/'}${token.uploadUrl}`;
+          }
+          
+          // Log the final URL we're posting to for debugging
+          console.log(`Uploading to: ${uploadUrl}`);
+          
+          xhr.open("POST", uploadUrl);
           xhr.send(formData);
         });
       });

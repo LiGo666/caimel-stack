@@ -1,15 +1,17 @@
-/* biome-ignore lint/style/noUnusedTemplateLiteral: <explanation> */
 /** biome-ignore-all lint/nursery/useSortedClasses: <explanation> */
 /** biome-ignore-all assist/source/useSortedAttributes: <explanation> */
 "use client";
 
-import { useCallback, useRef, useState } from "react";
-
 import { Alert, AlertDescription } from "@features/shadcn/components/ui/alert";
 import { Button } from "@features/shadcn/components/ui/button";
-import { Card, CardContent, CardFooter } from "@features/shadcn/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+} from "@features/shadcn/components/ui/card";
 import { Progress } from "@features/shadcn/components/ui/progress";
 import { cn } from "@features/shadcn/lib/utils";
+import { useCallback, useRef, useState } from "react";
 
 import type { FileUploadActions, UploadFile } from "../hooks/useFileUpload";
 import { useFileUpload } from "../hooks/useFileUpload";
@@ -19,61 +21,61 @@ export type FileUploadProps = {
    * Actions for handling file uploads
    */
   actions: FileUploadActions;
-  
+
   /**
    * Maximum number of files allowed
    * @default Infinity
    */
   maxFiles?: number;
-  
+
   /**
    * Maximum file size in MB
    * @default 50
    */
   maxSizeMB?: number;
-  
+
   /**
    * Allowed file types (MIME types)
    * @default [] (all types)
    */
   allowedTypes?: string[];
-  
+
   /**
    * Whether to allow multiple files
    * @default true
    */
   multiple?: boolean;
-  
+
   /**
    * Function to call when all uploads are complete
    */
   onComplete?: (files: UploadFile[]) => void;
-  
+
   /**
    * Function to call when an error occurs
    */
   onError?: (error: Error, files?: UploadFile[]) => void;
-  
+
   /**
    * Custom class name for the container
    */
   className?: string;
-  
+
   /**
    * Custom class name for the dropzone
    */
   dropzoneClassName?: string;
-  
+
   /**
    * Custom class name for the file list
    */
   fileListClassName?: string;
-  
+
   /**
    * Custom class name for the button
    */
   buttonClassName?: string;
-  
+
   /**
    * Custom class name for the progress bar
    */
@@ -121,106 +123,121 @@ export function FileUpload({
   /**
    * Validate a single file
    */
-  const validateFile = useCallback((file: File): { valid: boolean; error?: string } => {
-    // Check file size
-    if (file.size > maxSizeMB * BYTES_PER_MB) {
-      return {
-        valid: false,
-        error: `File "${file.name}" exceeds the maximum size of ${maxSizeMB}MB.`,
-      };
-    }
-    
-    // Check file type if allowedTypes is specified
-    if (allowedTypes.length > 0 && !allowedTypes.includes(file.type)) {
-      return {
-        valid: false,
-        error: `File "${file.name}" has an unsupported type. Allowed types: ${allowedTypes.join(", ")}.`,
-      };
-    }
-    
-    // File passed validation
-    return { valid: true };
-  }, [maxSizeMB, allowedTypes]);
+  const validateFile = useCallback(
+    (file: File): { valid: boolean; error?: string } => {
+      // Check file size
+      if (file.size > maxSizeMB * BYTES_PER_MB) {
+        return {
+          valid: false,
+          error: `File "${file.name}" exceeds the maximum size of ${maxSizeMB}MB.`,
+        };
+      }
+
+      // Check file type if allowedTypes is specified
+      if (allowedTypes.length > 0 && !allowedTypes.includes(file.type)) {
+        return {
+          valid: false,
+          error: `File "${file.name}" has an unsupported type. Allowed types: ${allowedTypes.join(", ")}.`,
+        };
+      }
+
+      // File passed validation
+      return { valid: true };
+    },
+    [maxSizeMB, allowedTypes]
+  );
 
   /**
    * Check if adding files would exceed max count
    */
-  const checkMaxFilesLimit = useCallback((count: number): { valid: boolean; error?: string } => {
-    if (files.length + count > maxFiles) {
-      return {
-        valid: false,
-        error: `You can only upload a maximum of ${maxFiles} files.`,
-      };
-    }
-    return { valid: true };
-  }, [files.length, maxFiles]);
+  const checkMaxFilesLimit = useCallback(
+    (count: number): { valid: boolean; error?: string } => {
+      if (files.length + count > maxFiles) {
+        return {
+          valid: false,
+          error: `You can only upload a maximum of ${maxFiles} files.`,
+        };
+      }
+      return { valid: true };
+    },
+    [files.length, maxFiles]
+  );
 
   /**
    * Process validation results and handle errors
    */
-  const handleValidationResults = useCallback((validFiles: File[], errors: string[]) => {
-    // Show errors if any
-    if (errors.length > 0) {
-      // biome-ignore lint/suspicious/noConsole: Development code
-      console.error("Validation errors:", errors);
-      setValidationErrors(errors);
+  const handleValidationResults = useCallback(
+    (validFiles: File[], errors: string[]) => {
+      // Show errors if any
+      if (errors.length > 0) {
+        // biome-ignore lint/suspicious/noConsole: Development code
+        console.error("Validation errors:", errors);
+        setValidationErrors(errors);
+        return false;
+      }
+
+      // Add valid files
+      if (validFiles.length > 0) {
+        addFiles(validFiles);
+        return true;
+      }
+
       return false;
-    }
-    
-    // Add valid files
-    if (validFiles.length > 0) {
-      addFiles(validFiles);
-      return true;
-    }
-    
-    return false;
-  }, [addFiles]);
+    },
+    [addFiles]
+  );
 
   /**
    * Validate files before adding them
    */
-  const validateAndAddFiles = useCallback((fileList: FileList | null) => {
-    if (!fileList) {
-      return;
-    }
-    
-    // Convert FileList to array
-    const filesArray = Array.from(fileList);
-    
-    // Check max files limit
-    const maxFilesCheck = checkMaxFilesLimit(filesArray.length);
-    if (!maxFilesCheck.valid && maxFilesCheck.error) {
-      setValidationErrors([maxFilesCheck.error]);
-      return;
-    }
-    
-    // Validate each file
-    const validFiles: File[] = [];
-    const errors: string[] = [];
-    
-    for (const file of filesArray) {
-      const result = validateFile(file);
-      if (result.valid) {
-        validFiles.push(file);
-      } else if (result.error) {
-        errors.push(result.error);
+  const validateAndAddFiles = useCallback(
+    (fileList: FileList | null) => {
+      if (!fileList) {
+        return;
       }
-    }
-    
-    // Process results
-    handleValidationResults(validFiles, errors);
-  }, [checkMaxFilesLimit, validateFile, handleValidationResults]);
+
+      // Convert FileList to array
+      const filesArray = Array.from(fileList);
+
+      // Check max files limit
+      const maxFilesCheck = checkMaxFilesLimit(filesArray.length);
+      if (!maxFilesCheck.valid && maxFilesCheck.error) {
+        setValidationErrors([maxFilesCheck.error]);
+        return;
+      }
+
+      // Validate each file
+      const validFiles: File[] = [];
+      const errors: string[] = [];
+
+      for (const file of filesArray) {
+        const result = validateFile(file);
+        if (result.valid) {
+          validFiles.push(file);
+        } else if (result.error) {
+          errors.push(result.error);
+        }
+      }
+
+      // Process results
+      handleValidationResults(validFiles, errors);
+    },
+    [checkMaxFilesLimit, validateFile, handleValidationResults]
+  );
 
   /**
    * Handle file input change
    */
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    validateAndAddFiles(e.target.files);
-    // Reset input value so the same file can be selected again
-    if (inputRef.current) {
-      inputRef.current.value = "";
-    }
-  }, [validateAndAddFiles]);
+  const handleChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      validateAndAddFiles(e.target.files);
+      // Reset input value so the same file can be selected again
+      if (inputRef.current) {
+        inputRef.current.value = "";
+      }
+    },
+    [validateAndAddFiles]
+  );
 
   // Drag and drop handlers are now inline in the button element
 
@@ -238,11 +255,11 @@ export function FileUpload({
     if (bytes < BYTES_PER_KB) {
       return `${bytes} B`;
     }
-    
+
     if (bytes < BYTES_PER_MB) {
       return `${(bytes / BYTES_PER_KB).toFixed(1)} KB`;
     }
-    
+
     return `${(bytes / BYTES_PER_MB).toFixed(1)} MB`;
   }, []);
 
@@ -257,18 +274,18 @@ export function FileUpload({
         accept={allowedTypes.join(",")}
         className="hidden"
       />
-      
+
       <CardContent className="p-6">
         {/* Dropzone */}
         <button
           type="button"
           className={cn(
             "border-2",
-            "border-dashed", 
-            "h-auto", 
-            "hover:bg-muted/50", 
-            "p-8", 
-            "text-center", 
+            "border-dashed",
+            "h-auto",
+            "hover:bg-muted/50",
+            "p-8",
+            "text-center",
             "w-full",
             dragActive ? "bg-muted" : "bg-transparent",
             dropzoneClassName
@@ -297,7 +314,9 @@ export function FileUpload({
           }}
         >
           <div className="flex flex-col items-center justify-center space-y-2">
-            <p className="mb-2 text-base">Drag and drop files here, or click to select files</p>
+            <p className="mb-2 text-base">
+              Drag and drop files here, or click to select files
+            </p>
             {allowedTypes.length > 0 && (
               <p className="mb-1 text-xs text-muted-foreground">
                 Allowed types: {allowedTypes.join(", ")}
@@ -332,12 +351,12 @@ export function FileUpload({
                         <Progress value={file.progress} className="h-2" />
                       </div>
                     )}
-                    
+
                     {/* Remove button */}
                     {!isUploading && (
-                      <Button 
+                      <Button
                         type="button"
-                        variant="ghost" 
+                        variant="ghost"
                         size="sm"
                         className="h-8 px-2 text-destructive"
                         onClick={(e) => {
@@ -362,7 +381,9 @@ export function FileUpload({
               <p>Please fix the following errors:</p>
               <ul className="mt-2 list-disc pl-5">
                 {validationErrors.map((error) => (
-                  <li key={`error-${error.replace(/\s+/g, "-").toLowerCase().slice(0, MAX_ERROR_KEY_LENGTH)}`}>
+                  <li
+                    key={`error-${error.replace(/\s+/g, "-").toLowerCase().slice(0, MAX_ERROR_KEY_LENGTH)}`}
+                  >
                     {error}
                   </li>
                 ))}
@@ -374,12 +395,10 @@ export function FileUpload({
         {/* Status messages */}
         {status === "success" && (
           <Alert className="mt-4 border-green-500 text-green-500">
-            <AlertDescription>
-              Upload completed successfully!
-            </AlertDescription>
+            <AlertDescription>Upload completed successfully!</AlertDescription>
           </Alert>
         )}
-        
+
         {status === "error" && (
           <Alert variant="destructive" className="mt-4">
             <AlertDescription>
@@ -392,9 +411,9 @@ export function FileUpload({
       {/* Action buttons */}
       <CardFooter className="flex gap-2 border-t bg-muted/50 p-4">
         {!isUploading && files.length > 0 && (
-          <Button 
+          <Button
             type="button"
-            variant="default" 
+            variant="default"
             size="sm"
             className={cn(buttonClassName)}
             onClick={startUpload}
@@ -402,7 +421,7 @@ export function FileUpload({
             Upload Files
           </Button>
         )}
-        
+
         {isUploading && (
           <Button
             type="button"
@@ -414,7 +433,7 @@ export function FileUpload({
             Cancel Upload
           </Button>
         )}
-        
+
         {files.length > 0 && !isUploading && (
           <Button
             type="button"

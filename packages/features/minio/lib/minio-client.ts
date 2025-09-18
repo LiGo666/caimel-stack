@@ -4,11 +4,11 @@
 
 import type { BucketItem } from "minio";
 import {
-  buildARN,
   Client as MinioClient,
   NotificationConfig,
   PostPolicy,
   QueueConfig,
+  buildARN,
 } from "minio";
 import {
   ARN_ACCOUNT,
@@ -67,10 +67,12 @@ export class MinioObjectStorageClient implements ObjectStorageClient {
     this.client = new MinioClient(clientConfig);
     this.logger = logger;
 
+    // Log initialization with sanitized info
     this.logger.info("MinIO client initialized", {
       endpoint: clientConfig.endPoint,
       port: clientConfig.port,
       useSSL: clientConfig.useSSL,
+      // Do not log credentials
     });
   }
 
@@ -189,10 +191,12 @@ export class MinioObjectStorageClient implements ObjectStorageClient {
       const expiry = options.expiry || DEFAULT_PRESIGNED_URL_EXPIRY;
       const maxFileSize = options.maxFileSize || DEFAULT_MAX_FILE_SIZE;
 
+      // Constants for time conversion
+      const MILLISECONDS_PER_SECOND = 1000;
+      
       // Create policy for the presigned URL
       const policy = new PostPolicy();
-      // biome-ignore lint/style/noMagicNumbers: calculation
-      policy.setExpires(new Date(Date.now() + expiry * 1000));
+      policy.setExpires(new Date(Date.now() + expiry * MILLISECONDS_PER_SECOND));
       policy.setBucket(bucketName);
       policy.setKey(objectName);
       policy.setContentLengthRange(0, maxFileSize);
@@ -203,6 +207,14 @@ export class MinioObjectStorageClient implements ObjectStorageClient {
       }
 
       const presignedPost = await this.client.presignedPostPolicy(policy);
+
+      // Log the full presigned post details for debugging
+      this.logger.info("Generated presigned post details", {
+        postURL: presignedPost.postURL,
+        formDataKeys: Object.keys(presignedPost.formData),
+        objectName,
+        bucketName
+      });
 
       return {
         url: presignedPost.postURL,

@@ -1,0 +1,1 @@
+* * * * * python /app/lightweight_check.py >> /var/log/cloudflare-sync.log 2>&1

@@ -16,6 +16,7 @@ export async function middleware(request: NextRequest) {
         request.nextUrl.pathname.split("/").pop() ||
         "unknown-action";
 
+      // isRateLimited now handles service unavailability internally
       const rateLimitResult = await isRateLimited(request, actionName);
 
       if (rateLimitResult === true) {
@@ -25,10 +26,10 @@ export async function middleware(request: NextRequest) {
         );
       }
     } catch (_error) {
-      return NextResponse.json(
-        { error: "Server error" },
-        { status: HTTP_STATUS.SERVER_ERROR }
-      );
+      // If there's still an error, log it but allow the request
+      // biome-ignore lint/suspicious/noConsole: logging errors
+      console.error("Middleware error:", _error);
+      // Continue with the request instead of returning an error
     }
   }
 

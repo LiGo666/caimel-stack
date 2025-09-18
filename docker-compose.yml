@@ -1,5 +1,58 @@
 name: caimel-stack
 services:
+  traefik:
+    image: traefik:latest
+    restart: unless-stopped
+    networks:
+      - proxy
+    ports:
+      - "443:443"
+      - "127.0.0.1:4001:8080"
+    volumes:
+      - ./infrastructure/traefik/traefik.yml:/etc/traefik/traefik.yml
+      - ./infrastructure/traefik/config.yml:/etc/traefik/config.yml
+      - ./infrastructure/traefik/certs:/etc/traefik/certs:ro
+      - ./infrastructure/traefik/healthcheck.sh:/etc/traefik/healthcheck.sh:ro,exec
+      - volume_traefik_logs:/var/log/traefik
+    environment:
+      - TZ=Europe/Berlin
+      - TRAEFIK_LOG_FILE=/var/log/traefik/traefik.log
+      - TRAEFIK_ACCESSLOG_FILE=/var/log/traefik/access.log
+      - TRAEFIK_ERRORLOG_FILE=/var/log/traefik/error.log
+      - TRAEFIK_LOG_ROTATE_MAX_SIZE=10
+      - TRAEFIK_LOG_ROTATE_MAX_AGE=30
+      - TRAEFIK_LOG_ROTATE_MAX_BACKUPS=7
+    healthcheck:
+      test: ["CMD-SHELL", "/etc/traefik/healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  cloudflare-sync:
+    build:
+      context: ./infrastructure/cloudflare-sync
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
+      - DOMAIN_BASE=${DOMAIN_BASE}
+    volumes:
+      - ./infrastructure/traefik/config.yml:/etc/traefik/config.yml:ro
+    networks:
+      - caimel-stack
+    healthcheck:
+      test: ["CMD", "/app/syncPerformedWithinLast120seconds.sh"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
   boilerplate:
     build:
       dockerfile: packages/features/nextjs/docker/dockerfile
@@ -10,14 +63,15 @@ services:
     working_dir: /nextjs
     environment:
       APP_NAME: "boilerplate"
+      APP_PUBLIC_URL: "https://test.caimel.tools"
       PNPM_STORE_DIR: /home/node/.pnpm-store
       TURBO_TELEMETRY_DISABLED: "1"
       NEXT_TELEMETRY_DISABLED: "1"
       NODE_ENV: development
       WATCHPACK_POLLING: "true"
+      RATE_LIMITER_ENABLED: "false"
       WATCHPACK_POLLING_INTERVAL: "200"
-      MINIO_HOST: ${MINIO_HOST}
-      MINIO_PORT: "9001"
+      MINIO_ENDPOINT: "https://upload.caimel.tools"
       MINIO_ACCESS_KEY: ${RANDOM_USERNAME}
       MINIO_SECRET_KEY: ${STRONG_PASSWORD}
       MINIO_NOTIFY_WEBHOOK_AUTH_TOKEN_NEXTJS: ${STRONG_PASSWORD}
@@ -152,26 +206,33 @@ services:
       timeout: 30s
       retries: 3
       start_period: 10s
+
   minio:
     image: minio/minio:latest
     restart: unless-stopped
     ports:
       - "127.0.0.1:9001:9001"
     environment:
-      - MINIO_ROOT_USER: ${RANDOM_USERNAME}
-      - MINIO_ROOT_PASSWORD: ${STRONG_PASSWORD}
-      - MINIO_NOTIFY_WEBHOOK_ENABLE_NEXTJS: "on"
-      - MINIO_NOTIFY_WEBHOOK_ENDPOINT_NEXTJS: "http://boilerplate:3000/api/minio-webhook"
-      - MINIO_NOTIFY_WEBHOOK_AUTH_TOKEN_NEXTJS: ${STRONG_PASSWORD}
-    command: ["server", "/data", "--console-address", ":9001"]
+      MINIO_ENDPOINT: "https://upload.caimel.tools"
+      MINIO_PORT: "9000"
+      MINIO_ROOT_USER: ${RANDOM_USERNAME}
+      MINIO_ROOT_PASSWORD: ${STRONG_PASSWORD}
+      MINIO_NOTIFY_WEBHOOK_ENABLE_NEXTJS: on
+      MINIO_NOTIFY_WEBHOOK_ENDPOINT_NEXTJS: http://boilerplate:3000/api/minio-webhook
+      MINIO_NOTIFY_WEBHOOK_AUTH_TOKEN_NEXTJS: ${STRONG_PASSWORD}
+      # CORS configuration (using official MinIO API CORS settings)
+      MINIO_API_CORS_ALLOW_ORIGIN: "https://test.caimel.tools"
+      MINIO_API_CORS_ALLOW_METHODS: "GET,PUT,POST,DELETE,OPTIONS"
+      MINIO_API_CORS_ALLOW_HEADERS: "Accept,Authorization,Content-Type,Content-Length,X-Amz-Date,X-Amz-Content-Sha256,X-Amz-Security-Token,X-Amz-User-Agent"
+      MINIO_API_CORS_EXPOSE_HEADERS: "ETag,X-Amz-Version-Id"
+      MINIO_BROWSER_REDIRECT_URL: "https://upload.caimel.tools"
+    command:
+      ["server", "/data", "--address", ":9000", "--console-address", ":9001"]
     volumes:
       - volume_minio_data:/data
     networks:
       - caimel-stack
       - proxy
-    depends_on:
-      nextjs:
-        condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 30s
@@ -190,3 +251,4 @@ volumes:
   volume_boilerplate2_pnpm_store:
   volume_redis_db:
   volume_minio_data:
+  volume_traefik_logs:
