@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/suspicious/noConsole: <explanation> */
 import { buildARN, Client, NotificationConfig, QueueConfig } from "minio";
 import {
   MINIO_ACCESS_KEY,
