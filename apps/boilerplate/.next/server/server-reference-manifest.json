@@ -1,5 +1,45 @@
 {
-  "node": {},
+  "node": {
+    "4035ca865a53e03f6089f5db9d921443c0a22bce76": {
+      "workers": {
+        "app/fileupload/page": {
+          "moduleId": "(action-browser)/../../node_modules/.pnpm/next@15.5.3_react-dom@19.1.1_react@19.1.1__react@19.1.1/node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2Fnextjs%2Fapps%2Fboilerplate%2Fapp%2Ffileupload%2F(actions)%2FbetterMockFileUploadAction.ts%22%2C%5B%7B%22id%22%3A%224035ca865a53e03f6089f5db9d921443c0a22bce76%22%2C%22exportedName%22%3A%22cancelUploadAction%22%2C%22filename%22%3A%22app%2Ffileupload%2F(actions)%2FbetterMockFileUploadAction.ts%22%7D%2C%7B%22id%22%3A%2240affea411d1884e977a1d5b08859970c5f0616493%22%2C%22exportedName%22%3A%22finalizeUploadAction%22%2C%22filename%22%3A%22app%2Ffileupload%2F(actions)%2FbetterMockFileUploadAction.ts%22%7D%2C%7B%22id%22%3A%2240ec1909335e06a28c89ce9c1a278e882a4625fb01%22%2C%22exportedName%22%3A%22generateUploadTokensAction%22%2C%22filename%22%3A%22app%2Ffileupload%2F(actions)%2FbetterMockFileUploadAction.ts%22%7D%5D%5D%5D&__client_imported__=true!",
+          "async": false
+        }
+      },
+      "layer": {
+        "app/fileupload/page": "action-browser"
+      },
+      "filename": "app/fileupload/(actions)/betterMockFileUploadAction.ts",
+      "exportedName": "cancelUploadAction"
+    },
+    "40affea411d1884e977a1d5b08859970c5f0616493": {
+      "workers": {
+        "app/fileupload/page": {
+          "moduleId": "(action-browser)/../../node_modules/.pnpm/next@15.5.3_react-dom@19.1.1_react@19.1.1__react@19.1.1/node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2Fnextjs%2Fapps%2Fboilerplate%2Fapp%2Ffileupload%2F(actions)%2FbetterMockFileUploadAction.ts%22%2C%5B%7B%22id%22%3A%224035ca865a53e03f6089f5db9d921443c0a22bce76%22%2C%22exportedName%22%3A%22cancelUploadAction%22%2C%22filename%22%3A%22app%2Ffileupload%2F(actions)%2FbetterMockFileUploadAction.ts%22%7D%2C%7B%22id%22%3A%2240affea411d1884e977a1d5b08859970c5f0616493%22%2C%22exportedName%22%3A%22finalizeUploadAction%22%2C%22filename%22%3A%22app%2Ffileupload%2F(actions)%2FbetterMockFileUploadAction.ts%22%7D%2C%7B%22id%22%3A%2240ec1909335e06a28c89ce9c1a278e882a4625fb01%22%2C%22exportedName%22%3A%22generateUploadTokensAction%22%2C%22filename%22%3A%22app%2Ffileupload%2F(actions)%2FbetterMockFileUploadAction.ts%22%7D%5D%5D%5D&__client_imported__=true!",
+          "async": false
+        }
+      },
+      "layer": {
+        "app/fileupload/page": "action-browser"
+      },
+      "filename": "app/fileupload/(actions)/betterMockFileUploadAction.ts",
+      "exportedName": "finalizeUploadAction"
+    },
+    "40ec1909335e06a28c89ce9c1a278e882a4625fb01": {
+      "workers": {
+        "app/fileupload/page": {
+          "moduleId": "(action-browser)/../../node_modules/.pnpm/next@15.5.3_react-dom@19.1.1_react@19.1.1__react@19.1.1/node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2Fnextjs%2Fapps%2Fboilerplate%2Fapp%2Ffileupload%2F(actions)%2FbetterMockFileUploadAction.ts%22%2C%5B%7B%22id%22%3A%224035ca865a53e03f6089f5db9d921443c0a22bce76%22%2C%22exportedName%22%3A%22cancelUploadAction%22%2C%22filename%22%3A%22app%2Ffileupload%2F(actions)%2FbetterMockFileUploadAction.ts%22%7D%2C%7B%22id%22%3A%2240affea411d1884e977a1d5b08859970c5f0616493%22%2C%22exportedName%22%3A%22finalizeUploadAction%22%2C%22filename%22%3A%22app%2Ffileupload%2F(actions)%2FbetterMockFileUploadAction.ts%22%7D%2C%7B%22id%22%3A%2240ec1909335e06a28c89ce9c1a278e882a4625fb01%22%2C%22exportedName%22%3A%22generateUploadTokensAction%22%2C%22filename%22%3A%22app%2Ffileupload%2F(actions)%2FbetterMockFileUploadAction.ts%22%7D%5D%5D%5D&__client_imported__=true!",
+          "async": false
+        }
+      },
+      "layer": {
+        "app/fileupload/page": "action-browser"
+      },
+      "filename": "app/fileupload/(actions)/betterMockFileUploadAction.ts",
+      "exportedName": "generateUploadTokensAction"
+    }
+  },
   "edge": {},
   "encryptionKey": "UBe7crt8xXSHfut2re3E7tnPwJaIYhe+Zm9tmaBYA18="
 }

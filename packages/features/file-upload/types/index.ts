@@ -32,14 +32,39 @@ export type UploadConfig = {
  */
 export type UploadToken = {
   /**
-   * URL for uploading the file
+   * URL for uploading the file (for simple uploads)
    */
   uploadUrl: string;
   
   /**
-   * Form data to include with the upload request
+   * Form data to include with the upload request (for simple uploads)
    */
   formData: Record<string, string>;
+
+  /**
+   * Whether this token is for a multipart upload
+   */
+  isMultipart?: boolean;
+
+  /**
+   * Upload ID for multipart uploads
+   */
+  uploadId?: string;
+
+  /**
+   * Object key in the bucket (for multipart uploads)
+   */
+  objectKey?: string;
+
+  /**
+   * Bucket name (for multipart uploads)
+   */
+  bucketName?: string;
+
+  /**
+   * Token ID for client reference (for multipart uploads)
+   */
+  tokenId?: string;
 };
 
 /**

@@ -221,9 +221,9 @@ services:
       MINIO_NOTIFY_WEBHOOK_ENDPOINT_NEXTJS: http://boilerplate:3000/api/minio-webhook
       MINIO_NOTIFY_WEBHOOK_AUTH_TOKEN_NEXTJS: ${STRONG_PASSWORD}
       # CORS configuration (using official MinIO API CORS settings)
-      MINIO_API_CORS_ALLOW_ORIGIN: "https://test.caimel.tools"
+      MINIO_API_CORS_ALLOW_ORIGIN: "*"
       MINIO_API_CORS_ALLOW_METHODS: "GET,PUT,POST,DELETE,OPTIONS"
-      MINIO_API_CORS_ALLOW_HEADERS: "Accept,Authorization,Content-Type,Content-Length,X-Amz-Date,X-Amz-Content-Sha256,X-Amz-Security-Token,X-Amz-User-Agent"
+      MINIO_API_CORS_ALLOW_HEADERS: "Accept,Authorization,Content-Type,Content-Length,X-Amz-Date,X-Amz-Content-Sha256,X-Amz-Security-Token,X-Amz-User-Agent,Origin,Referer"
       MINIO_API_CORS_EXPOSE_HEADERS: "ETag,X-Amz-Version-Id"
       MINIO_BROWSER_REDIRECT_URL: "https://upload.caimel.tools"
     command:

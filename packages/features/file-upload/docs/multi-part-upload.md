@@ -4,6 +4,18 @@
 
 This document outlines the implementation plan for adding multipart upload support to the file-upload feature. Multipart uploads are necessary for handling large files efficiently and reliably, especially when dealing with files that exceed server-side size limits.
 
+## Key Design Principle: Unchanged Public API
+
+**The public API will remain unchanged.** The existing functions in `betterMockFileUploadAction.ts` and similar action files will continue to work exactly as they do now:
+
+```typescript
+export async function generateUploadTokensAction(count = 1): Promise<GenerateTokensResponse>
+export async function finalizeUploadAction(identifier: string): Promise<UploadActionResponse>
+export async function cancelUploadAction(identifier: string): Promise<UploadActionResponse>
+```
+
+All the complexity of deciding between simple and multipart uploads will be handled internally by the implementation. This ensures backward compatibility and maintains a clean, simple API for consumers.
+
 ## Current Limitations
 
 1. **Single-Part Uploads Only**: The current implementation only supports simple (single-part) uploads for all files.
@@ -522,6 +534,30 @@ const processChunksWithConcurrency = async (
   });
 };
 ```
+
+## Client-Side Storage Requirements
+
+The multipart upload implementation may require some additional client-side storage to track upload state. Here are the considerations:
+
+### Minimal Approach (Recommended)
+
+The minimal approach requires no additional client-side storage beyond what's already in the current implementation:
+
+- The server maintains all state about multipart uploads (uploadId, parts, etc.)
+- The client only needs to know the identifier returned by `generateUploadTokens`
+- All chunk tracking happens in-memory during the upload process
+
+This approach maintains the clean API and minimizes changes to the client code.
+
+### Enhanced Approach (Optional)
+
+If we want to support advanced features like resumable uploads across page refreshes, we would need additional client-side storage:
+
+- Store upload state in localStorage or IndexedDB
+- Track which chunks have been uploaded successfully
+- Store the identifier and other metadata needed to resume uploads
+
+**Decision Point**: The minimal approach is recommended for the initial implementation as it requires no changes to the public API. The enhanced approach could be considered as a future enhancement if resumable uploads across page refreshes become a requirement.
 
 ## Benefits of Multipart Upload
 

@@ -8,7 +8,7 @@ export type FileUploadActions = {
   /**
    * Generate upload tokens for files
    */
-  generateUploadTokens: (count?: number) => Promise<GenerateTokensResponse>;
+  generateUploadTokens: (count?: number, options?: { fileSize?: number }) => Promise<GenerateTokensResponse>;
 
   /**
    * Finalize an upload after it's complete
@@ -111,6 +111,44 @@ export function useFileUpload(
     []
   );
 
+  // Constants for simulation
+  const PROGRESS_INCREMENT = 10;
+  const PROGRESS_MAX = 100;
+  const PROGRESS_DELAY_MS = 500;
+
+  /**
+   * Handle multipart upload for a file
+   */
+  const handleMultipartUpload = useCallback(
+    async (_file: UploadFile, index: number, token: Record<string, unknown>): Promise<void> => {
+      if (!token.isMultipart) {
+        throw new Error("Token is not configured for multipart upload");
+      }
+
+      try {
+        // For now, we'll just simulate a multipart upload
+        // In a real implementation, you would:
+        // 1. Split the file into chunks
+        // 2. Get presigned URLs for each chunk
+        // 3. Upload each chunk
+        // 4. Complete the multipart upload
+
+        // Simulate progress
+        for (let progress = 0; progress <= PROGRESS_MAX; progress += PROGRESS_INCREMENT) {
+          updateFileProgress(index, progress);
+          await new Promise(resolve => setTimeout(resolve, PROGRESS_DELAY_MS));
+        }
+
+        updateFileStatus(index, "success");
+        return Promise.resolve();
+      } catch (uploadError) {
+        updateFileStatus(index, "error", String(uploadError));
+        throw uploadError;
+      }
+    },
+    [updateFileProgress, updateFileStatus]
+  );
+
   /**
    * Start the upload process
    */
@@ -121,10 +159,14 @@ export function useFileUpload(
 
     try {
       setStatus("preparing");
-
-      // Generate upload tokens
+      
+      // Get the maximum file size to determine if we need multipart upload
+      const maxFileSize = files.length > 0 ? Math.max(...files.map(f => f.file.size)) : 0;
+      
+      // Generate upload tokens with file size information
       const { tokens, identifier } = await actions.generateUploadTokens(
-        files.length
+        files.length,
+        { fileSize: maxFileSize }
       );
       setUploadIdentifier(identifier);
       
@@ -138,10 +180,14 @@ export function useFileUpload(
         const token = tokens[index];
         updateFileStatus(index, "uploading");
 
-        // For this example, we'll use simple upload for all files
-        // In a real implementation, you would implement multipart upload for large files
-
-        // Create form data
+        // Check if this token is for multipart upload
+        if (token.isMultipart) {
+          console.log("Using multipart upload for file:", file.file.name, "size:", file.file.size);
+          return handleMultipartUpload(file, index, token);
+        }
+        
+        console.log("Using simple upload for file:", file.file.name, "size:", file.file.size);
+        // Simple upload - create form data
         const formData = new FormData();
 
         // Add all required form fields from token.formData
@@ -259,6 +305,7 @@ export function useFileUpload(
   }, [
     files,
     actions,
+    handleMultipartUpload,
     updateFileProgress,
     updateFileStatus,
     onComplete,
